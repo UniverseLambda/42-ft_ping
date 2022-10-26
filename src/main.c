@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200112L
 
+#include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -186,12 +187,16 @@ int main(int argc, char **argv) {
 	unsigned char ipv4_header[20];
 	unsigned char response_data[1024];
 
+	struct timeval time_tmp;
+
 	for (;;) {
+		suseconds_t sent_instant;
+		struct msghdr msg_header = {0};
+
 		ft_memset(response_origin, 0, sizeof(response_origin));
 		ft_memset(ipv4_header, 0, sizeof(ipv4_header));
 		ft_memset(response_data, 0, sizeof(response_data));
 
-		struct msghdr msg_header = {0};
 
 		struct iovec response_buffer_info[2] = {
 			(struct iovec) { .iov_base = ipv4_header, .iov_len = sizeof(ipv4_header)},
@@ -209,55 +214,57 @@ int main(int argc, char **argv) {
 
 		int written = sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &selected_address, selected_addresslen);
 
+		// Should not fail, like... I hope *shrug*
+		gettimeofday(&time_tmp, NULL);
+		sent_instant = time_tmp.tv_usec;
+
 		if (written <= 0) {
 			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 			exit(2);
 		}
 
-		msg_header.msg_name = response_origin;
-		msg_header.msg_namelen = sizeof(response_origin);
-		msg_header.msg_iov = response_buffer_info;
-		msg_header.msg_iovlen = 2;
+		suseconds_t response_time = 0;
+		struct icmphdr *response_icmphdr;
+		unsigned char *response_payload;
 
-		ssize_t read = recvmsg(conn_fd, &msg_header, 0);
+		for (;;) {
+			msg_header.msg_name = response_origin;
+			msg_header.msg_namelen = sizeof(response_origin);
+			msg_header.msg_iov = response_buffer_info;
+			msg_header.msg_iovlen = 2;
 
-		if (read <= 0) {
-			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
-			exit(2);
+			ssize_t read = recvmsg(conn_fd, &msg_header, 0);
+			gettimeofday(&time_tmp, NULL);
+			suseconds_t response_instant = time_tmp.tv_usec;
+
+			response_time = response_instant - sent_instant;
+
+			if (read <= 0) {
+				fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
+				exit(2);
+			}
+
+			size_t icmphdr_offset = (((ipv4_header[0]) & 0x0F) - 5) * 4;
+			size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
+
+			response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
+			response_payload = response_data + icmp_data_offset;
+
+			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0) {
+				break;
+			}
 		}
 
-		size_t icmphdr_offset = (((ipv4_header[0]) & 0x0F) - 5) * 4;
-		size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
 
-		printf("icmphdr_offset: %zu\n", icmphdr_offset);
-
-		struct icmphdr *response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
-		unsigned char *response_payload = response_data + icmp_data_offset;
-
-		printf("Received ICMP response: { type: %d, code: %d, id: 0x%X, sequence: 0x%X }\n",
+		printf("Received ICMP response in %lu.%.3lums: { type: %d, code: %d, id: 0x%X, sequence: %u, payload: %s }\n",
+			response_time / 1000,
+			response_time % 1000,
 			response_icmphdr->type,
 			response_icmphdr->code,
 			response_icmphdr->un.echo.id,
-			response_icmphdr->un.echo.sequence
+			response_icmphdr->un.echo.sequence,
+			(char *)response_payload
 		);
-
-		printf("Payload: %s\n", response_payload);
-
-		for (size_t i = 0; i < sizeof(ipv4_header); ++i) {
-			printf("%.2X ", (unsigned int)(ipv4_header[i]));
-			if (i && i % 16 == 0) {
-				puts("");
-			}
-		}
-		puts("");
-
-		for (size_t i = 0; i < 80; ++i) {
-			printf("%.2X ", (unsigned int)(response_data[i]));
-			if (i && i % 16 == 0) {
-				puts("");
-			}
-		}
-		puts("");
 
 		sleep(3);
 	}
