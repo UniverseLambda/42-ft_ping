@@ -182,18 +182,20 @@ int main(int argc, char **argv) {
 
 	String data = string_new("MESSAGE!");
 
+	char response_origin[255];
+	unsigned char ipv4_header[20];
+	unsigned char response_data[1024];
+
 	for (;;) {
-		char response_origin[255];
-		char response_buffer[255];
 		ft_memset(response_origin, 0, sizeof(response_origin));
-		ft_memset(response_buffer, 0, sizeof(response_buffer));
+		ft_memset(ipv4_header, 0, sizeof(ipv4_header));
+		ft_memset(response_data, 0, sizeof(response_data));
 
 		struct msghdr msg_header = {0};
-		struct icmphdr response_header = {0};
 
 		struct iovec response_buffer_info[2] = {
-			(struct iovec) { .iov_base =  response_buffer, .iov_len = sizeof(response_buffer)},
-			(struct iovec) { .iov_base = &response_header, .iov_len = sizeof(response_header)}
+			(struct iovec) { .iov_base = ipv4_header, .iov_len = sizeof(ipv4_header)},
+			(struct iovec) { .iov_base = response_data, .iov_len = sizeof(response_data)},
 		};
 
 		header.un.echo.sequence = ++sequence;
@@ -201,7 +203,6 @@ int main(int argc, char **argv) {
 		make_icmp_packet(&header, data, buffer);
 
 		uint16_t cs = ~compute_checksum(buffer, sizeof(header) + data.len);
-
 
 		// Properly setting checksum without re-copying the whole packet into the buffer
 		((uint16_t *)buffer)[1] = cs;
@@ -225,7 +226,40 @@ int main(int argc, char **argv) {
 			exit(2);
 		}
 
-		printf("Received ICMP response: { id: %d, sequence: %d }\n", response_header.un.echo.id, response_header.un.echo.sequence);
+		size_t icmphdr_offset = (((ipv4_header[0]) & 0x0F) - 5) * 4;
+		size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
+
+		printf("icmphdr_offset: %zu\n", icmphdr_offset);
+
+		struct icmphdr *response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
+		unsigned char *response_payload = response_data + icmp_data_offset;
+
+		printf("Received ICMP response: { type: %d, code: %d, id: 0x%X, sequence: 0x%X }\n",
+			response_icmphdr->type,
+			response_icmphdr->code,
+			response_icmphdr->un.echo.id,
+			response_icmphdr->un.echo.sequence
+		);
+
+		printf("Payload: %s\n", response_payload);
+
+		for (size_t i = 0; i < sizeof(ipv4_header); ++i) {
+			printf("%.2X ", (unsigned int)(ipv4_header[i]));
+			if (i && i % 16 == 0) {
+				puts("");
+			}
+		}
+		puts("");
+
+		for (size_t i = 0; i < 80; ++i) {
+			printf("%.2X ", (unsigned int)(response_data[i]));
+			if (i && i % 16 == 0) {
+				puts("");
+			}
+		}
+		puts("");
+
+		sleep(3);
 	}
 
 	return 0;
