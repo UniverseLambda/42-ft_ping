@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
 			(char *)response_payload
 		);
 
-		sleep(3);
+		sleep(1);
 	}
 
 	return 0;
