@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
+/*   Updated: 2023/03/27 17:57:40 by clsaad           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #define _POSIX_C_SOURCE 200112L
 
 #include <sys/time.h>
@@ -12,112 +24,31 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "inc/result.h"
-#include "inc/string.h"
+#include "inc/ft_result.h"
+#include "inc/ft_string.h"
+#include "inc/ft_util.h"
+#include "inc/cli.h"
 
-typedef enum CommandFlag {
-	CF_HELP		= 0x0001,
-	CF_VERBOSE	= 0x0002,
-} CommandFlag;
 
-typedef struct Command {
-	unsigned int flags;
-	String address;
-} Command;
-
-__attribute__ ((__noreturn__)) static void display_help() {
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage\n");
-	fprintf(stderr, "ft_ping [options] <destination>\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "  <destination>      dns name or ip address\n");
-	fprintf(stderr, "  -h                 print help and exit\n");
-	fprintf(stderr, "  -v                 verbose output\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "For more details see ping(8).\n");
-	exit(2);
-}
-
-static void *ft_memset(void *dest, int v, size_t len) {
-	for (size_t i = 0; i < len; ++i)
-		((char *)dest)[i] = (char)v;
-	return dest;
-}
-
-static void *ft_memcpy(void *dest, const void *src, size_t len) {
-	for (size_t i = 0; i < len; ++i)
-		((char *)dest)[i] = ((char *)src)[i];
-	return dest;
-}
-
-static void make_icmp_packet(struct icmphdr *icmp_header, String payload, char *dest) {
+static void make_icmp_packet(struct icmphdr *icmp_header, t_string payload, char *dest)
+{
 	ft_memcpy(dest, icmp_header, sizeof(*icmp_header));
-
 	ft_memcpy(dest + sizeof(*icmp_header), payload.data, payload.len);
 }
 
-static CommandFlag get_opt_flag(char c) {
-	printf("FLAG: %c\n", c);
-
-	switch (c)
-	{
-	case 'h': return CF_HELP;
-	case 'v': return CF_VERBOSE;
-	}
-
-	fprintf(stderr, "ft_ping: invalid option -- '%c'\n", c);
-	display_help();
-}
-
-static Command parse_args(int argc, char **argv) {
-	Command result = {0};
-	bool has_address = false;
-
-	if (argc == 1) {
-		fprintf(stderr, "ft_ping: usage error: Destination address required\n");
-		exit(1);
-	}
-
-	for (int i = 1; i < argc; ++i) {
-		String arg = string_new(argv[i]);
-
-		if (string_char_at(&arg, 0) == '-') {
-			for (size_t char_idx = 1; char_idx < string_len(&arg); ++char_idx) {
-				result.flags |= get_opt_flag(string_char_at(&arg, char_idx));
-			}
-		} else {
-			if (has_address) {
-				display_help(argv[0]);
-			}
-
-			has_address = true;
-			result.address = arg;
-		}
-	}
-
-	if (!has_address && !(result.flags & CF_HELP)) {
-		fprintf(stderr, "ft_ping: usage error: Destination address required\n");
-		exit(1);
-	}
-
-	return result;
-}
-
-static struct addrinfo *resolve_host(String host) {
+static struct addrinfo *resolve_host(t_string host)
+{
 	struct addrinfo hints = {0};
 	struct addrinfo *result;
 
 	hints.ai_family = AF_INET;			/* Allow IPv4 only */
 	hints.ai_socktype = SOCK_RAW;		/* Datagram socket */
 	hints.ai_protocol = IPPROTO_ICMP;	/* ICMP protocol */
-
 	printf("Resolving \"%s\"\n", host.data);
-
 	int gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
 
-	if (gai_ret_val != 0) {
+	if (gai_ret_val != 0)
+	{
 		fprintf(stderr, "ft_ping: %s: %s\n", host.data, gai_strerror(gai_ret_val));
 		exit(1);
 	}
@@ -125,14 +56,17 @@ static struct addrinfo *resolve_host(String host) {
 	return result;
 }
 
-uint16_t compute_checksum(void *data, size_t data_len) {
+uint16_t compute_checksum(void *data, size_t data_len)
+{
 	size_t word_len = data_len / 2;
 	uint32_t sum = 0xFFFF;
 
-	for (size_t i = 0; i < word_len; ++i) {
+	for (size_t i = 0; i < word_len; ++i)
+	{
 		sum += ((uint16_t *)data)[i];
 
-		if (sum > 0xFFFF) {
+		if (sum > 0xFFFF)
+		{
 			sum -= 0XFFFF;
 		}
 	}
@@ -140,12 +74,11 @@ uint16_t compute_checksum(void *data, size_t data_len) {
 	return sum;
 }
 
-int main(int argc, char **argv) {
-	Command cmd = parse_args(argc, argv);
+int main(int argc, char **argv)
+{
+	t_command	cmd;
 
-	if (cmd.flags & CF_HELP) {
-		display_help();
-	}
+	cmd = ftp_command(argc, argv);
 
 	struct addrinfo *current;
 	struct addrinfo *resolved = resolve_host(cmd.address);
@@ -154,8 +87,10 @@ int main(int argc, char **argv) {
 	int conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	int sequence = 0;
 
-	for (current = resolved; current != NULL; current = current->ai_next) {
-		if (conn_fd == -1) {
+	for (current = resolved; current != NULL; current = current->ai_next)
+	{
+		if (conn_fd == -1)
+		{
 			// FIXME: check for errno usage for subject compliance
 			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 			exit(2);
@@ -169,9 +104,8 @@ int main(int argc, char **argv) {
 
 	freeaddrinfo(resolved);
 
-	if (conn_fd == -1) {
+	if (conn_fd == -1)
 		fprintf(stderr, "ft_ping: %s: Host not found\n", cmd.address.data);
-	}
 
 	printf("PING %s 56(84) bytes\n", cmd.address.data);
 
@@ -181,7 +115,7 @@ int main(int argc, char **argv) {
 
 	char buffer[1024];
 
-	String data = string_new("MESSAGE!");
+	t_string data = string_new("MESSAGE!");
 
 	char response_origin[255];
 	unsigned char ipv4_header[20];
@@ -189,7 +123,8 @@ int main(int argc, char **argv) {
 
 	struct timeval time_tmp;
 
-	for (;;) {
+	while (1)
+	{
 		suseconds_t sent_instant;
 		struct msghdr msg_header = {0};
 
@@ -199,8 +134,10 @@ int main(int argc, char **argv) {
 
 
 		struct iovec response_buffer_info[2] = {
-			(struct iovec) { .iov_base = ipv4_header, .iov_len = sizeof(ipv4_header)},
-			(struct iovec) { .iov_base = response_data, .iov_len = sizeof(response_data)},
+			(struct iovec)
+			{ .iov_base = ipv4_header, .iov_len = sizeof(ipv4_header)},
+			(struct iovec)
+			{ .iov_base = response_data, .iov_len = sizeof(response_data)},
 		};
 
 		header.un.echo.sequence = ++sequence;
@@ -218,7 +155,8 @@ int main(int argc, char **argv) {
 		gettimeofday(&time_tmp, NULL);
 		sent_instant = time_tmp.tv_usec;
 
-		if (written <= 0) {
+		if (written <= 0)
+		{
 			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 			exit(2);
 		}
@@ -227,7 +165,8 @@ int main(int argc, char **argv) {
 		struct icmphdr *response_icmphdr;
 		unsigned char *response_payload;
 
-		for (;;) {
+		while (1)
+		{
 			msg_header.msg_name = response_origin;
 			msg_header.msg_namelen = sizeof(response_origin);
 			msg_header.msg_iov = response_buffer_info;
@@ -239,7 +178,8 @@ int main(int argc, char **argv) {
 
 			response_time = response_instant - sent_instant;
 
-			if (read <= 0) {
+			if (read <= 0)
+			{
 				fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 				exit(2);
 			}
@@ -250,9 +190,8 @@ int main(int argc, char **argv) {
 			response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
 			response_payload = response_data + icmp_data_offset;
 
-			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0) {
+			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0)
 				break;
-			}
 		}
 
 
