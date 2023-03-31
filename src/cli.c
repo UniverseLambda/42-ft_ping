@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "inc/cli.h"
 #include "inc/ft_string.h"
 
@@ -53,9 +54,10 @@ static t_command parse_args(int argc, char **argv)
 		fprintf(stderr, "ft_ping: usage error: Destination address required\n");
 		exit(1);
 	}
-	while (i < argc)
+	index = 0;
+	while (++index < argc)
 	{
-		arg = string_new(argv[i]);
+		arg = string_new(argv[index]);
 
 		if (string_char_at(&arg, 0) == '-')
 			for (size_t char_idx = 1; char_idx < string_len(&arg); ++char_idx)
@@ -66,7 +68,6 @@ static t_command parse_args(int argc, char **argv)
 			has_address = true;
 			result.address = arg;
 		}
-		++index;
 	}
 
 	if (!has_address && !(result.flags & CF_HELP))
@@ -80,10 +81,10 @@ static t_command parse_args(int argc, char **argv)
 
 t_command ftp_command(int argc, char **argv)
 {
-    t_command cmd = parse_args(argc, argv);
+	t_command cmd = parse_args(argc, argv);
 
 	if (cmd.flags & CF_HELP)
-	{
 		display_help();
-	}
+
+	return (cmd);
 }

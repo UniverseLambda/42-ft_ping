@@ -167,6 +167,8 @@ int main(int argc, char **argv)
 
 		while (1)
 		{
+			alarm(1);
+
 			msg_header.msg_name = response_origin;
 			msg_header.msg_namelen = sizeof(response_origin);
 			msg_header.msg_iov = response_buffer_info;
@@ -192,6 +194,8 @@ int main(int argc, char **argv)
 
 			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0)
 				break;
+
+			alarm(0);
 		}
 
 

@@ -4,8 +4,8 @@ NAME := ft_ping
 
 BUILD_TYPE := DEBUG
 
-SRC_FILES := main.c ft_util.c ft_result.c ft_string.c
-INC_FILES := ft_util.h ft_result.h ft_string.h
+SRC_FILES := main.c cli.c ft_util.c ft_result.c ft_string.c
+INC_FILES := cli.h ft_util.h ft_result.h ft_string.h
 
 SRCS_DIR := src
 INCS_DIR := inc
@@ -20,8 +20,8 @@ LD := gcc
 RM := rm
 MKDIR := mkdir
 
-CFLAGS := $(CFLAGS) -g3 -Wall -Wextra -Werror -std=c99 -fsanitize=address -fsanitize=undefined
-LDFLAGS := $(LDFLAGS) -g3 -Wall -Wextra -Werror -std=c99 -fsanitize=address -fsanitize=undefined
+CFLAGS := $(CFLAGS) -g3 -Wall -Wextra -Werror -std=c99 #-fsanitize=address -fsanitize=undefined
+LDFLAGS := $(LDFLAGS) -g3 -Wall -Wextra -Werror -std=c99 #-fsanitize=address -fsanitize=undefined
 
 CFLAGS += -D$(BUILD_TYPE)=
 
