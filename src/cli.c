@@ -6,17 +6,25 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:11 by clsaad            #+#    #+#             */
-/*   Updated: 2023/03/27 17:59:23 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/18 16:41:59 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include "inc/cli.h"
 #include "inc/ft_string.h"
 
-__attribute__ ((__noreturn__)) static void display_help()
+__attribute__ ((__noreturn__)) static void	err_exit(char *err)
+{
+	fprintf(stderr, "ft_ping: %s", err);
+	exit(1);
+}
+
+__attribute__ ((__noreturn__)) static void	display_help(void)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage\n");
@@ -32,59 +40,62 @@ __attribute__ ((__noreturn__)) static void display_help()
 	exit(2);
 }
 
-static t_command_flag get_opt_flag(char c)
+static void	set_opt_flag(unsigned int *flags, char c)
 {
+	t_command_flag	selected_flag;
+
 	if (c == 'h')
-		return (CF_HELP);
+		selected_flag = CF_HELP;
 	else if (c == 'v')
-		return (CF_VERBOSE);
-	fprintf(stderr, "ft_ping: invalid option -- '%c'\n", c);
-	display_help();
+		selected_flag = CF_VERBOSE;
+	else
+	{
+		fprintf(stderr, "ft_ping: invalid option -- '%c'\n", c);
+		display_help();
+	}
+	*flags |= selected_flag;
 }
 
-static t_command parse_args(int argc, char **argv)
-{
-	int index;
-	t_command result = {0};
-	bool has_address = false;
-	t_string arg;
+// TODO: add support for arguments without '-'
 
-	if (argc == 1)
-	{
-		fprintf(stderr, "ft_ping: usage error: Destination address required\n");
-		exit(1);
-	}
+static t_command	parse_args(int argc, char **argv)
+{
+	int			index;
+	t_command	result;
+	bool		has_address;
+	t_string	s;
+
 	index = 0;
+	result.flags = 0;
+	has_address = false;
+	if (argc == 1)
+		err_exit("ft_ping: usage error: Destination address required\n");
 	while (++index < argc)
 	{
-		arg = string_new(argv[index]);
-
-		if (string_char_at(&arg, 0) == '-')
-			for (size_t char_idx = 1; char_idx < string_len(&arg); ++char_idx)
-				result.flags |= get_opt_flag(string_char_at(&arg, char_idx));
-		else {
+		s = string_new(argv[index]);
+		if (string_char_at(&s, 0) == '-')
+			string_foreach(&s, (t_foreach_handler)set_opt_flag, &result.flags);
+		else
+		{
 			if (has_address)
-				display_help(argv[0]);
+				display_help();
 			has_address = true;
-			result.address = arg;
+			result.address = s;
 		}
 	}
-
 	if (!has_address && !(result.flags & CF_HELP))
-	{
-		fprintf(stderr, "ft_ping: usage error: Destination address required\n");
-		exit(1);
-	}
-
-	return result;
+		err_exit("ft_ping: usage error: Destination address required\n");
+	return (result);
 }
 
-t_command ftp_command(int argc, char **argv)
+t_command	ftp_command(int argc, char **argv)
 {
-	t_command cmd = parse_args(argc, argv);
+	t_command	cmd;
 
+	cmd = parse_args(argc, argv);
 	if (cmd.flags & CF_HELP)
+	{
 		display_help();
-
+	}
 	return (cmd);
 }
