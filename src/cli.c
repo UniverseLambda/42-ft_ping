@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:11 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/18 16:41:59 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/19 10:32:29 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,8 @@ static void	set_opt_flag(unsigned int *flags, char c)
 		selected_flag = CF_HELP;
 	else if (c == 'v')
 		selected_flag = CF_VERBOSE;
+	else if (c == '-' && (*flags & CF_MINUS) == 0)
+		selected_flag = CF_MINUS;
 	else
 	{
 		fprintf(stderr, "ft_ping: invalid option -- '%c'\n", c);

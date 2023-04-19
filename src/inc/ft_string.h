@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:58 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/18 16:20:26 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/19 10:13:48 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,5 +29,6 @@ char		string_char_at(t_string *self, size_t idx);
 bool		string_is_null(t_string *self);
 size_t		string_len(t_string *self);
 void		string_foreach(t_string *self, t_foreach_handler f, void *instance);
+t_string	string_slice(t_string *self, size_t start, size_t end);
 
 #endif // FT_STRING_H

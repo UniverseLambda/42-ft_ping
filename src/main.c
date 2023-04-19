@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/03/27 17:57:40 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/19 16:57:35 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -23,11 +24,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "inc/ft_result.h"
 #include "inc/ft_string.h"
 #include "inc/ft_util.h"
 #include "inc/cli.h"
+#include "inc/ping_stats.h"
 
 
 static void make_icmp_packet(struct icmphdr *icmp_header, t_string payload, char *dest)
@@ -42,7 +45,7 @@ static struct addrinfo *resolve_host(t_string host)
 	struct addrinfo *result;
 
 	hints.ai_family = AF_INET;			/* Allow IPv4 only */
-	hints.ai_socktype = SOCK_RAW;		/* Datagram socket */
+	hints.ai_socktype = SOCK_RAW;		/* Raw socket */
 	hints.ai_protocol = IPPROTO_ICMP;	/* ICMP protocol */
 	printf("Resolving \"%s\"\n", host.data);
 	int gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
@@ -98,14 +101,16 @@ int main(int argc, char **argv)
 
 		selected_address = *(current->ai_addr);
 		selected_addresslen = current->ai_addrlen;
-
 		break;
 	}
 
 	freeaddrinfo(resolved);
 
-	if (conn_fd == -1)
+	if (selected_addresslen == 0)
+	{
 		fprintf(stderr, "ft_ping: %s: Host not found\n", cmd.address.data);
+		exit(1);
+	}
 
 	printf("PING %s 56(84) bytes\n", cmd.address.data);
 
@@ -121,6 +126,12 @@ int main(int argc, char **argv)
 	unsigned char ipv4_header[20];
 	unsigned char response_data[1024];
 
+	char ip[INET_ADDRSTRLEN] = {0};
+
+	inet_ntop(AF_INET, &((struct sockaddr_in *)&selected_address)->sin_addr, ip, INET_ADDRSTRLEN);
+
+	printf("%s\n", ip);
+
 	struct timeval time_tmp;
 
 	while (1)
@@ -131,7 +142,6 @@ int main(int argc, char **argv)
 		ft_memset(response_origin, 0, sizeof(response_origin));
 		ft_memset(ipv4_header, 0, sizeof(ipv4_header));
 		ft_memset(response_data, 0, sizeof(response_data));
-
 
 		struct iovec response_buffer_info[2] = {
 			(struct iovec)
@@ -149,6 +159,7 @@ int main(int argc, char **argv)
 		// Properly setting checksum without re-copying the whole packet into the buffer
 		((uint16_t *)buffer)[1] = cs;
 
+		pstats_sent();
 		int written = sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &selected_address, selected_addresslen);
 
 		// Should not fail, like... I hope *shrug*

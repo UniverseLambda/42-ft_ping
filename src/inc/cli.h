@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:16 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/18 16:23:47 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/19 10:30:52 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ typedef enum e_command_flag
 {
 	CF_HELP		= 0x0001,
 	CF_VERBOSE	= 0x0002,
+	CF_MINUS	= 0x8000
 }	t_command_flag;
 
 typedef struct s_command {
