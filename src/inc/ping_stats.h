@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:56:51 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/19 16:04:01 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/20 15:14:51 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,10 +28,9 @@ struct s_ping_stats
 	size_t		sent;
 	size_t		received;
 	t_string	user_addr;
-	uint8_t	ipv4[4];
 };
 
-void pstats_init(t_string user_addr, uint8_t ipv4[4]);
+void pstats_init(t_string user_addr);
 void pstats_responded(suseconds_t rtt);
 suseconds_t	pstats_sent(void);
 struct s_ping_stats pstats_get(void);

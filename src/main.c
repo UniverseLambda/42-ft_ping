@@ -6,25 +6,26 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/19 16:57:35 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/20 16:13:45 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #define _POSIX_C_SOURCE 200112L
 
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/ip.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "inc/ft_result.h"
 #include "inc/ft_string.h"
@@ -57,6 +58,11 @@ static struct addrinfo *resolve_host(t_string host)
 	}
 
 	return result;
+}
+
+static void sig_ign_with_effect(int s)
+{
+	(void)s;
 }
 
 uint16_t compute_checksum(void *data, size_t data_len)
@@ -126,13 +132,11 @@ int main(int argc, char **argv)
 	unsigned char ipv4_header[20];
 	unsigned char response_data[1024];
 
-	char ip[INET_ADDRSTRLEN] = {0};
-
-	inet_ntop(AF_INET, &((struct sockaddr_in *)&selected_address)->sin_addr, ip, INET_ADDRSTRLEN);
-
-	printf("%s\n", ip);
+	pstats_init(cmd.address);
 
 	struct timeval time_tmp;
+
+	signal(SIGALRM, sig_ign_with_effect);
 
 	while (1)
 	{
@@ -174,12 +178,11 @@ int main(int argc, char **argv)
 
 		suseconds_t response_time = 0;
 		struct icmphdr *response_icmphdr;
-		unsigned char *response_payload;
+		// unsigned char *response_payload;
 
+		alarm(1);
 		while (1)
 		{
-			alarm(1);
-
 			msg_header.msg_name = response_origin;
 			msg_header.msg_namelen = sizeof(response_origin);
 			msg_header.msg_iov = response_buffer_info;
@@ -193,34 +196,29 @@ int main(int argc, char **argv)
 
 			if (read <= 0)
 			{
+				if (errno == EINTR)
+					break;
 				fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 				exit(2);
 			}
 
 			size_t icmphdr_offset = (((ipv4_header[0]) & 0x0F) - 5) * 4;
-			size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
+			// size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
 
 			response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
-			response_payload = response_data + icmp_data_offset;
+			// response_payload = response_data + icmp_data_offset;
 
 			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0)
 				break;
-
-			alarm(0);
 		}
 
+		char response_ip[INET_ADDRSTRLEN] = {0};
 
-		printf("Received ICMP response in %lu.%.3lums: { type: %d, code: %d, id: 0x%X, sequence: %u, payload: %s }\n",
-			response_time / 1000,
-			response_time % 1000,
-			response_icmphdr->type,
-			response_icmphdr->code,
-			response_icmphdr->un.echo.id,
-			response_icmphdr->un.echo.sequence,
-			(char *)response_payload
-		);
+		inet_ntop(AF_INET, &((struct sockaddr_in *)&selected_address)->sin_addr, response_ip, INET_ADDRSTRLEN);
 
-		sleep(1);
+		printf("%u bytes from %s icmp_seq=%u ttl=%u time=%lu.%.1lums\n", 0, response_ip, response_icmphdr->un.echo.sequence, ipv4_header[8], response_time / 1000, (response_time / 100) % 10);
+
+		sleep(alarm(0));
 	}
 
 	return 0;
