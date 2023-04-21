@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/20 16:13:45 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/21 14:37:38 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,59 +83,83 @@ uint16_t compute_checksum(void *data, size_t data_len)
 	return sum;
 }
 
+t_sockaddr_res	select_interface(t_string address)
+{
+	struct addrinfo	*current;
+	struct addrinfo	*resolved;
+	struct sockaddr selected_address = {0};
+	size_t selected_addresslen = 0;
+
+	resolved = resolve_host(address);
+	current = resolved;
+	while (current != NULL)
+	{
+		if (current->ai_addr && current->ai_addrlen > 0)
+		{
+			selected_address = *(current->ai_addr);
+			selected_addresslen = current->ai_addrlen;
+			break;
+		}
+		current = current->ai_next;
+	}
+	freeaddrinfo(resolved);
+	return ((t_sockaddr_res){ .sock_addr = selected_address, .sock_addr_len = selected_addresslen });
+}
+
+static void	print_time(suseconds_t time)
+{
+	const suseconds_t	left	= time / 1000;
+	const suseconds_t	right	= time % 1000;
+	char buffer[6];
+
+	if (left >= 100)
+		printf("%lums\n", left);
+	else
+	{
+		ft_memset(buffer, 0, 6);
+		snprintf(buffer, 6 - (left != 0), "%lu.%.3lu", left, right);
+		printf("%sms\n", buffer);
+	}
+}
+
 int main(int argc, char **argv)
 {
-	t_command	cmd;
+	t_command		cmd;
+	t_sockaddr_res	sockaddr;
 
 	cmd = ftp_command(argc, argv);
 
-	struct addrinfo *current;
-	struct addrinfo *resolved = resolve_host(cmd.address);
-	struct sockaddr selected_address = {0};
-	size_t selected_addresslen = 0;
 	int conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+
+	if (conn_fd == -1)
+	{
+		// FIXME: check for errno usage for subject compliance
+		fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
+		exit(2);
+	}
+
+	sockaddr = select_interface(cmd.address);
+
 	int sequence = 0;
 
-	for (current = resolved; current != NULL; current = current->ai_next)
-	{
-		if (conn_fd == -1)
-		{
-			// FIXME: check for errno usage for subject compliance
-			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
-			exit(2);
-		}
-
-		selected_address = *(current->ai_addr);
-		selected_addresslen = current->ai_addrlen;
-		break;
-	}
-
-	freeaddrinfo(resolved);
-
-	if (selected_addresslen == 0)
-	{
-		fprintf(stderr, "ft_ping: %s: Host not found\n", cmd.address.data);
-		exit(1);
-	}
-
 	printf("PING %s 56(84) bytes\n", cmd.address.data);
+
+
+	char buffer[1024];
+
+
+	pstats_init(cmd.address);
+
+
+	t_string data = string_new("Lorem ipsum dolor sit amet eleifend.");
 
 	struct icmphdr header = {0};
 	header.type = ICMP_ECHO;
 	header.un.echo.id = getpid();
-
-	char buffer[1024];
-
-	t_string data = string_new("MESSAGE!");
-
+	struct timeval time_tmp;
 	char response_origin[255];
 	unsigned char ipv4_header[20];
 	unsigned char response_data[1024];
-
-	pstats_init(cmd.address);
-
-	struct timeval time_tmp;
-
 	signal(SIGALRM, sig_ign_with_effect);
 
 	while (1)
@@ -164,7 +188,7 @@ int main(int argc, char **argv)
 		((uint16_t *)buffer)[1] = cs;
 
 		pstats_sent();
-		int written = sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &selected_address, selected_addresslen);
+		int written = sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &sockaddr.sock_addr, sockaddr.sock_addr_len);
 
 		// Should not fail, like... I hope *shrug*
 		gettimeofday(&time_tmp, NULL);
@@ -214,12 +238,15 @@ int main(int argc, char **argv)
 
 		char response_ip[INET_ADDRSTRLEN] = {0};
 
-		inet_ntop(AF_INET, &((struct sockaddr_in *)&selected_address)->sin_addr, response_ip, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, &((struct sockaddr_in *)&sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
 
-		printf("%u bytes from %s icmp_seq=%u ttl=%u time=%lu.%.1lums\n", 0, response_ip, response_icmphdr->un.echo.sequence, ipv4_header[8], response_time / 1000, (response_time / 100) % 10);
+		uint16_t packet_len = ((uint16_t)ipv4_header[2] << 8) | ipv4_header[3];
+		printf("%u bytes from %s: icmp_seq=%u ttl=%u time=", packet_len, response_ip, response_icmphdr->un.echo.sequence, ipv4_header[8]);
+
+		print_time(response_time);
 
 		sleep(alarm(0));
 	}
 
-	return 0;
+	return (0);
 }

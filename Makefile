@@ -20,8 +20,8 @@ LD := gcc
 RM := rm
 MKDIR := mkdir
 
-CFLAGS := $(CFLAGS) -g3 -Wall -Wextra -Werror -std=c99 #-fsanitize=address -fsanitize=undefined
-LDFLAGS := $(LDFLAGS) -g3 -Wall -Wextra -Werror -std=c99 #-fsanitize=address -fsanitize=undefined
+CFLAGS := $(CFLAGS) -g3 -Wall -Wextra -Werror -std=c99 -fsanitize=address -fsanitize=undefined -fstack-protector-all
+LDFLAGS := $(LDFLAGS) -g3 -Wall -Wextra -Werror -std=c99 -fsanitize=address -fsanitize=undefined -fstack-protector-all
 
 CFLAGS += -D$(BUILD_TYPE)=
 

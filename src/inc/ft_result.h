@@ -6,20 +6,29 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:18:09 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/19 10:13:44 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/21 11:33:27 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef FT_RESULT_H
 # define FT_RESULT_H
 
-# include <unistd.h>
 # include <stdbool.h>
+# include <sys/socket.h>
+# include <sys/time.h>
+# include <unistd.h>
+
+typedef struct s_sockaddr_res
+{
+	struct sockaddr	sock_addr;
+	size_t			sock_addr_len;
+}	t_sockaddr_res;
 
 union u_resultable
 {
-	char	data[128];
-	int		error_code;
+	t_sockaddr_res	sock_addr;
+	suseconds_t		suseconds;
+	int				error_code;
 };
 
 typedef struct s_result
