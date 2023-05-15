@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
+/*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/21 16:26:34 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/15 14:12:51 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,14 +25,18 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
 #include <unistd.h>
 
+#include "inc/ft_time.h"
 #include "inc/ft_result.h"
 #include "inc/ft_string.h"
 #include "inc/ft_util.h"
 #include "inc/cli.h"
 #include "inc/ping_stats.h"
 
+
+int usleep(useconds_t usec);
 
 static void make_icmp_packet(struct icmphdr *icmp_header, t_string payload, char *dest)
 {
@@ -48,7 +52,7 @@ static struct addrinfo *resolve_host(t_string host)
 	hints.ai_family = AF_INET;			/* Allow IPv4 only */
 	hints.ai_socktype = SOCK_RAW;		/* Raw socket */
 	hints.ai_protocol = IPPROTO_ICMP;	/* ICMP protocol */
-	printf("Resolving \"%s\"\n", host.data);
+	// printf("Resolving \"%s\"\n", host.data);
 	int gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
 
 	if (gai_ret_val != 0)
@@ -169,14 +173,11 @@ int main(int argc, char **argv)
 
 	printf("PING %s 56(84) bytes\n", cmd.address.data);
 
-
 	pstats_init(cmd.address);
 
-	struct timeval time_tmp;
 	char response_origin[255];
 	unsigned char ipv4_header[20];
 	unsigned char response_data[512];
-	signal(SIGALRM, signal_handler);
 	signal(SIGINT, signal_handler);
 
 	while (1)
@@ -184,6 +185,7 @@ int main(int argc, char **argv)
 		suseconds_t sent_instant;
 		struct msghdr msg_header = {0};
 
+		signal(SIGALRM, signal_handler);
 		ft_memset(response_origin, 0, sizeof(response_origin));
 		ft_memset(ipv4_header, 0, sizeof(ipv4_header));
 		ft_memset(response_data, 0, sizeof(response_data));
@@ -204,13 +206,11 @@ int main(int argc, char **argv)
 			exit(2);
 		}
 
-		// Should not fail, like... I hope *shrug*
-		if (0 > gettimeofday(&time_tmp, NULL))
-			fprintf(stderr, "ft_ping: gettimeofday error: %s\n", strerror(errno));
-		sent_instant = time_tmp.tv_usec;
+		sent_instant = now_micro();
 
 		suseconds_t response_time = 0;
 		struct icmphdr *response_icmphdr;
+		bool responded = true;
 		// unsigned char *response_payload;
 
 		alarm(1);
@@ -221,16 +221,19 @@ int main(int argc, char **argv)
 			msg_header.msg_iov = response_buffer_info;
 			msg_header.msg_iovlen = 2;
 
-			ssize_t read = recvmsg(conn_fd, &msg_header, 0);
-			gettimeofday(&time_tmp, NULL);
-			suseconds_t response_instant = time_tmp.tv_usec;
+			ssize_t read = recvmsg(conn_fd, &msg_header, MSG_WAITALL);
+			suseconds_t response_instant = now_micro();
 
 			response_time = response_instant - sent_instant;
 
 			if (read <= 0)
 			{
 				if (errno == EINTR)
+				{
+					responded = false;
 					break;
+				}
+
 				fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 				exit(2);
 			}
@@ -244,16 +247,29 @@ int main(int argc, char **argv)
 			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0 && response_icmphdr->un.echo.sequence == sequence)
 				break;
 		}
-		sleep(alarm(0));
 
-		char response_ip[INET_ADDRSTRLEN] = {0};
+		alarm(0);
 
-		inet_ntop(AF_INET, &((struct sockaddr_in *)&sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
+		if (*last_signal() != SIGINT && response_time < 1000000) {
+			usleep(1000000 - response_time);
+		}
 
-		uint16_t packet_len = ((uint16_t)ipv4_header[2] << 8) | ipv4_header[3];
-		printf("%u bytes from %s: icmp_seq=%u ttl=%u time=", packet_len, response_ip, response_icmphdr->un.echo.sequence, ipv4_header[8]);
+		if (*last_signal() == SIGINT) {
+			break;
+		}
 
-		print_time(response_time);
+		if (responded)
+		{
+			char response_ip[INET_ADDRSTRLEN] = {0};
+
+			inet_ntop(AF_INET, &((struct sockaddr_in *)&sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
+
+			uint16_t packet_len = ((uint16_t)ipv4_header[2] << 8) | ipv4_header[3];
+			printf("%u bytes from %s: icmp_seq=%u ttl=%u time=", packet_len, response_ip, response_icmphdr->un.echo.sequence, ipv4_header[8]);
+
+			print_time(response_time);
+		}
+
 	}
 
 	return (0);
