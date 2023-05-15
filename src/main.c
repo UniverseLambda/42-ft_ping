@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/21 14:37:38 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/04/21 16:26:34 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,9 +60,16 @@ static struct addrinfo *resolve_host(t_string host)
 	return result;
 }
 
-static void sig_ign_with_effect(int s)
+static int *last_signal(void)
 {
-	(void)s;
+	static int	sig = 0;
+
+	return (&sig);
+}
+
+static void signal_handler(int s)
+{
+	*last_signal() = s;
 }
 
 uint16_t compute_checksum(void *data, size_t data_len)
@@ -122,6 +129,24 @@ static void	print_time(suseconds_t time)
 	}
 }
 
+static t_result send_icmp_echo(int conn_fd, int *sequence, t_sockaddr_res sa)
+{
+	struct icmphdr	header = {0};
+	char			buffer[512];
+	const t_string	data = string_new("Lorem ipsum dolor sit amet eleifend.");
+
+	header.type = ICMP_ECHO;
+	header.un.echo.id = getpid();
+	header.un.echo.sequence = ++(*sequence);
+	make_icmp_packet(&header, data, buffer);
+	// Properly setting checksum without re-copying the whole packet into the buffer
+	((uint16_t *)buffer)[1] = ~compute_checksum(buffer, sizeof(header) + data.len);
+	pstats_sent();
+	if (0 > sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &sa.sock_addr, sa.sock_addr_len))
+		return (result_err(errno));
+	return (result_ok((union u_resultable)0));
+}
+
 int main(int argc, char **argv)
 {
 	t_command		cmd;
@@ -145,22 +170,14 @@ int main(int argc, char **argv)
 	printf("PING %s 56(84) bytes\n", cmd.address.data);
 
 
-	char buffer[1024];
-
-
 	pstats_init(cmd.address);
 
-
-	t_string data = string_new("Lorem ipsum dolor sit amet eleifend.");
-
-	struct icmphdr header = {0};
-	header.type = ICMP_ECHO;
-	header.un.echo.id = getpid();
 	struct timeval time_tmp;
 	char response_origin[255];
 	unsigned char ipv4_header[20];
-	unsigned char response_data[1024];
-	signal(SIGALRM, sig_ign_with_effect);
+	unsigned char response_data[512];
+	signal(SIGALRM, signal_handler);
+	signal(SIGINT, signal_handler);
 
 	while (1)
 	{
@@ -178,27 +195,19 @@ int main(int argc, char **argv)
 			{ .iov_base = response_data, .iov_len = sizeof(response_data)},
 		};
 
-		header.un.echo.sequence = ++sequence;
 
-		make_icmp_packet(&header, data, buffer);
+		t_result send_res = send_icmp_echo(conn_fd, &sequence, sockaddr);
 
-		uint16_t cs = ~compute_checksum(buffer, sizeof(header) + data.len);
-
-		// Properly setting checksum without re-copying the whole packet into the buffer
-		((uint16_t *)buffer)[1] = cs;
-
-		pstats_sent();
-		int written = sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &sockaddr.sock_addr, sockaddr.sock_addr_len);
-
-		// Should not fail, like... I hope *shrug*
-		gettimeofday(&time_tmp, NULL);
-		sent_instant = time_tmp.tv_usec;
-
-		if (written <= 0)
+		if (result_is_err(&send_res))
 		{
-			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
+			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(send_res.payload.error_code));
 			exit(2);
 		}
+
+		// Should not fail, like... I hope *shrug*
+		if (0 > gettimeofday(&time_tmp, NULL))
+			fprintf(stderr, "ft_ping: gettimeofday error: %s\n", strerror(errno));
+		sent_instant = time_tmp.tv_usec;
 
 		suseconds_t response_time = 0;
 		struct icmphdr *response_icmphdr;
@@ -232,9 +241,10 @@ int main(int argc, char **argv)
 			response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
 			// response_payload = response_data + icmp_data_offset;
 
-			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0)
+			if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0 && response_icmphdr->un.echo.sequence == sequence)
 				break;
 		}
+		sleep(alarm(0));
 
 		char response_ip[INET_ADDRSTRLEN] = {0};
 
@@ -244,8 +254,6 @@ int main(int argc, char **argv)
 		printf("%u bytes from %s: icmp_seq=%u ttl=%u time=", packet_len, response_ip, response_icmphdr->un.echo.sequence, ipv4_header[8]);
 
 		print_time(response_time);
-
-		sleep(alarm(0));
 	}
 
 	return (0);
