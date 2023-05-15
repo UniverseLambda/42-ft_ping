@@ -1,20 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_time.h                                          :+:      :+:    :+:   */
+/*   ft_sqrt.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/15 10:32:27 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/15 16:00:14 by clsaad           ###   ########.fr       */
+/*   Created: 2023/05/15 16:39:16 by clsaad            #+#    #+#             */
+/*   Updated: 2023/05/15 16:55:42 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_TIME_H
-# define FT_TIME_H
+#ifndef FT_SQRT_H
+# define FT_SQRT_H
 
 # include <stdint.h>
 
-uint64_t now_micro();
+uint64_t	ft_sqrt(uint64_t nb);
 
-#endif // FT_TIME_H
+#endif // FT_SQRT_H

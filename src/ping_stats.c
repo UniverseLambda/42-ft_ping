@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ping_stats.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
+/*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:57:00 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/20 15:14:55 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/15 17:09:27 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "inc/ft_time.h"
 #include "inc/ft_string.h"
 #include "inc/ft_util.h"
 
@@ -34,10 +35,10 @@ void pstats_init(t_string user_addr)
 	handle = pstats_handle();
 	ft_memset(handle, 0, sizeof(struct s_ping_stats));
 	handle->user_addr = user_addr;
-	handle->min = __LONG_MAX__;
+	handle->min = UINT64_MAX;
 }
 
-void pstats_responded(suseconds_t rtt)
+void pstats_responded(uint64_t rtt)
 {
 	struct s_ping_stats	*handle;
 
@@ -47,20 +48,19 @@ void pstats_responded(suseconds_t rtt)
 		handle->min = rtt;
 	if (rtt > handle->max)
 		handle->max = rtt;
+	// FIXME: At icmp_seq == 7, big fuck up here
 	handle->average += (rtt - handle->average) / handle->received;
+	handle->sq_average += ((rtt * rtt) - handle->sq_average) / handle->received;
 }
 
-suseconds_t	pstats_sent(void)
+void	pstats_sent(void)
 {
 	struct s_ping_stats	*handle;
-	struct timeval		time_tmp;
 
 	handle = pstats_handle();
-	gettimeofday(&time_tmp, NULL);
 	if (handle->sent == 0)
-		handle->start = time_tmp.tv_usec / 1000;
+		handle->start = now_micro();
 	pstats_handle()->sent += 1;
-	return (time_tmp.tv_usec / 1000);
 }
 
 struct s_ping_stats pstats_get(void)

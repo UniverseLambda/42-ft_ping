@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ping_stats.h                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
+/*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:56:51 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/20 15:14:51 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/15 16:49:09 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,19 +20,19 @@
 
 struct s_ping_stats
 {
-	suseconds_t	start;
-	suseconds_t	min;
-	suseconds_t	average;
-	suseconds_t	max;
-	suseconds_t	mdev;
+	uint64_t	start;
+	uint64_t	min;
+	uint64_t	average;
+	uint64_t	sq_average;
+	uint64_t	max;
 	size_t		sent;
 	size_t		received;
 	t_string	user_addr;
 };
 
-void pstats_init(t_string user_addr);
-void pstats_responded(suseconds_t rtt);
-suseconds_t	pstats_sent(void);
-struct s_ping_stats pstats_get(void);
+void	pstats_init(t_string user_addr);
+void	pstats_responded(uint64_t rtt);
+void	pstats_sent(void);
+struct s_ping_stats	pstats_get(void);
 
 #endif // PING_STATS_H

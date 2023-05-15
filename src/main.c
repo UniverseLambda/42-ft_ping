@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/15 14:12:51 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/15 17:06:01 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,14 +25,14 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-
 #include <unistd.h>
 
-#include "inc/ft_time.h"
-#include "inc/ft_result.h"
-#include "inc/ft_string.h"
-#include "inc/ft_util.h"
 #include "inc/cli.h"
+#include "inc/ft_result.h"
+#include "inc/ft_sqrt.h"
+#include "inc/ft_string.h"
+#include "inc/ft_time.h"
+#include "inc/ft_util.h"
 #include "inc/ping_stats.h"
 
 
@@ -117,19 +117,19 @@ t_sockaddr_res	select_interface(t_string address)
 	return ((t_sockaddr_res){ .sock_addr = selected_address, .sock_addr_len = selected_addresslen });
 }
 
-static void	print_time(suseconds_t time)
+static void	print_time(uint64_t time)
 {
-	const suseconds_t	left	= time / 1000;
-	const suseconds_t	right	= time % 1000;
-	char buffer[6];
+	const uint64_t	left	= time / 1000;
+	const uint64_t	right	= time % 1000;
+	char buffer[7];
 
 	if (left >= 100)
 		printf("%lums\n", left);
 	else
 	{
 		ft_memset(buffer, 0, 6);
-		snprintf(buffer, 6 - (left != 0), "%lu.%.3lu", left, right);
-		printf("%sms\n", buffer);
+		snprintf(buffer, 7, "%lu.%.3lu", left, right);
+		printf("%.*sms\n", 5 - (left != 0), buffer);
 	}
 }
 
@@ -149,6 +149,36 @@ static t_result send_icmp_echo(int conn_fd, int *sequence, t_sockaddr_res sa)
 	if (0 > sendto(conn_fd, buffer, sizeof(header) + data.len, 0, &sa.sock_addr, sa.sock_addr_len))
 		return (result_err(errno));
 	return (result_ok((union u_resultable)0));
+}
+
+static char *time_to_printable(char *buf, uint64_t time) {
+	if (time == 0)
+		return "0";
+	snprintf(buf, 32, "%lu.%lu", time / 1000, time % 1000);
+
+	return (buf);
+}
+
+static void print_end_stats(void)
+{
+	const struct s_ping_stats	stats = pstats_get();
+	char						tmp_buf[32];
+	uint64_t					mdev;
+
+	printf("\n--- %s ping statistics ---\n", stats.user_addr.data);
+	printf("%zu packets transmitted, %zu received, %zu%% packet loss, time %ldms\n",
+		stats.sent,
+		stats.received,
+		100 - ((stats.received * 100) / stats.sent),
+		(now_micro() - stats.start) / 1000);
+
+	if (stats.received == 0)
+		return;
+	mdev = ft_sqrt(stats.sq_average - (stats.average * stats.average));
+	printf("rtt min/avg/max/mdev = %s/", time_to_printable(tmp_buf, stats.min));
+	printf("%s/", time_to_printable(tmp_buf, stats.average));
+	printf("%s/", time_to_printable(tmp_buf, stats.max));
+	printf("%s ms\n", time_to_printable(tmp_buf, mdev));
 }
 
 int main(int argc, char **argv)
@@ -182,7 +212,7 @@ int main(int argc, char **argv)
 
 	while (1)
 	{
-		suseconds_t sent_instant;
+		uint64_t sent_instant;
 		struct msghdr msg_header = {0};
 
 		signal(SIGALRM, signal_handler);
@@ -208,7 +238,7 @@ int main(int argc, char **argv)
 
 		sent_instant = now_micro();
 
-		suseconds_t response_time = 0;
+		uint64_t response_time = 0;
 		struct icmphdr *response_icmphdr;
 		bool responded = true;
 		// unsigned char *response_payload;
@@ -222,7 +252,7 @@ int main(int argc, char **argv)
 			msg_header.msg_iovlen = 2;
 
 			ssize_t read = recvmsg(conn_fd, &msg_header, MSG_WAITALL);
-			suseconds_t response_instant = now_micro();
+			uint64_t response_instant = now_micro();
 
 			response_time = response_instant - sent_instant;
 
@@ -262,6 +292,8 @@ int main(int argc, char **argv)
 		{
 			char response_ip[INET_ADDRSTRLEN] = {0};
 
+			pstats_responded(response_time);
+
 			inet_ntop(AF_INET, &((struct sockaddr_in *)&sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
 
 			uint16_t packet_len = ((uint16_t)ipv4_header[2] << 8) | ipv4_header[3];
@@ -271,6 +303,8 @@ int main(int argc, char **argv)
 		}
 
 	}
+
+	print_end_stats();
 
 	return (0);
 }

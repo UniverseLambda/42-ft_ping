@@ -1,20 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_time.h                                          :+:      :+:    :+:   */
+/*   ft_sqrt.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/15 10:32:27 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/15 16:00:14 by clsaad           ###   ########.fr       */
+/*   Created: 2020/08/18 09:18:46 by clsaad            #+#    #+#             */
+/*   Updated: 2023/05/15 17:01:40 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_TIME_H
-# define FT_TIME_H
+#include "inc/ft_sqrt.h"
 
-# include <stdint.h>
+uint64_t	ft_sqrt(uint64_t a)
+{
+	uint64_t	prev_x;
+	uint64_t	x;
 
-uint64_t now_micro();
-
-#endif // FT_TIME_H
+	prev_x = UINT64_MAX;
+	x = a;
+	if (a > 0)
+	{
+		while (x < prev_x)
+		{
+			prev_x = x;
+			x = (prev_x + (a / prev_x)) / 2;
+		}
+	}
+	return (x);
+}
