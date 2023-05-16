@@ -1,0 +1,6 @@
+SIZES:
+
+Data = 56 bytes (timestamp (8 bytes) + random data (48 bytes))
+ICMP header (from Wireshark, default header + echo options) = 8
+ICMP Total = 64
+IPv4.length = 84

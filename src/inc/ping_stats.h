@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:56:51 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/15 16:49:09 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/16 10:11:20 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,8 @@ struct s_ping_stats
 {
 	uint64_t	start;
 	uint64_t	min;
-	uint64_t	average;
-	uint64_t	sq_average;
+	uint64_t	rtt_sum;
+	uint64_t	rtt_sq_sum;
 	uint64_t	max;
 	size_t		sent;
 	size_t		received;

@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:57:00 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/15 17:09:27 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/16 10:11:24 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,9 +48,8 @@ void pstats_responded(uint64_t rtt)
 		handle->min = rtt;
 	if (rtt > handle->max)
 		handle->max = rtt;
-	// FIXME: At icmp_seq == 7, big fuck up here
-	handle->average += (rtt - handle->average) / handle->received;
-	handle->sq_average += ((rtt * rtt) - handle->sq_average) / handle->received;
+	handle->rtt_sum += rtt;
+	handle->rtt_sq_sum += rtt * rtt;
 }
 
 void	pstats_sent(void)
