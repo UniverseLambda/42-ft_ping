@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/16 16:31:57 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/16 17:23:47 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,12 @@
 #include "inc/ft_util.h"
 #include "inc/ping_stats.h"
 
+typedef struct s_initedping
+{
+	t_sockaddr_res	sockaddr;
+	t_string		address;
+	int				conn_fd;
+}	t_initedping;
 
 int usleep(useconds_t usec);
 
@@ -190,72 +196,110 @@ static void print_end_stats(void)
 	printf("%s ms\n", time_to_printable(tmp_buf, mdev));
 }
 
-static char *resolve_cache_addr(const struct sockaddr *sock_addr, size_t sock_addr_len)
+static char *resolve_cache_addr(const t_sockaddr_res *sockaddr)
 {
-	static struct sockaddr	last_sockaddr;
+	static t_sockaddr_res	last_sockaddr;
 	static char buf[257];
 
-	if (ft_memcmp(sock_addr, &last_sockaddr, sock_addr_len) == 0)
+	if (ft_memcmp(&sockaddr->sock_addr, &last_sockaddr, sockaddr->sock_addr_len + sizeof(sockaddr->sock_addr_len)) == 0)
 		return (buf);
-	last_sockaddr = *sock_addr;
+	last_sockaddr = *sockaddr;
 	ft_memset(buf, 0, sizeof(buf));
-	getnameinfo(&last_sockaddr, sock_addr_len, buf, sizeof(buf), NULL, 0, 0);
+	getnameinfo(&last_sockaddr.sock_addr, last_sockaddr.sock_addr_len, buf, sizeof(buf), NULL, 0, 0);
 	return (buf);
 }
 
-int main(int argc, char **argv)
+static void received_stats(const t_initedping *ping, const char *message, uint64_t response_time, uint16_t sequence, uint8_t *ipv4_header, struct icmphdr *icmphdr)
+{
+	char response_ip[INET_ADDRSTRLEN];
+	uint16_t packet_len;
+
+	if (!message)
+		pstats_responded(response_time);
+
+	inet_ntop(AF_INET, &((struct sockaddr_in *)&ping->sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
+
+	if (message)
+		printf("From %s (%s) icmp_seq=%u %s\n",
+			resolve_cache_addr(&ping->sockaddr),
+			response_ip,
+			sequence,
+			message
+		);
+	else
+	{
+		packet_len = (((uint16_t)ipv4_header[2] << 8) | ipv4_header[3]) - ((ipv4_header[0] & 0x0F) * 4);
+		printf("%u bytes from %s (%s): icmp_seq=%u ttl=%u time=",
+			packet_len,
+			resolve_cache_addr(&ping->sockaddr),
+			response_ip,
+			icmphdr->un.echo.sequence,
+			ipv4_header[8]
+		);
+
+		print_time(response_time);
+	}
+}
+
+t_initedping ping_init(int argc, char **argv)
 {
 	t_command		cmd;
-	t_sockaddr_res	sockaddr;
+	t_initedping	res;
 
 	cmd = ftp_command(argc, argv);
-
-	int conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-
-	if (conn_fd == -1)
+	res.conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	cmd = ftp_command(argc, argv);
+	if (res.conn_fd == -1)
 	{
 		fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 		exit(2);
 	}
-
-	sockaddr = select_interface(cmd.address);
-
-	uint16_t sequence = 0;
-
-	printf("PING %s 56(84) bytes\n", cmd.address.data);
-
+	res.sockaddr = select_interface(cmd.address);
+	res.address = cmd.address;
 	pstats_init(cmd.address);
+	signal(SIGINT, signal_handler);
+	return (res);
+}
 
+void new_iteration(void *response_origin, void *ipv4_header, void *response_data, struct iovec *response_buffer_info)
+{
+	signal(SIGALRM, signal_handler);
+	ft_memset(response_origin, 0, sizeof(struct sockaddr));
+	ft_memset(ipv4_header, 0, 20);
+	ft_memset(response_data, 0, 512);
+
+	response_buffer_info[0] = (struct iovec)
+			{ .iov_base = ipv4_header, .iov_len = 20};
+	response_buffer_info[1] = (struct iovec)
+			{ .iov_base = response_data, .iov_len = 512};
+}
+
+int main(int argc, char **argv)
+{
+	uint16_t sequence = 0;
+	const t_initedping ping = ping_init(argc, argv);
 	struct sockaddr response_origin;
 	unsigned char ipv4_header[20];
 	unsigned char response_data[512];
-	signal(SIGINT, signal_handler);
+	struct iovec response_buffer_info[2];
+
+
+	printf("PING %s 56(84) bytes\n", ping.address.data);
 
 	while (1)
 	{
 		uint64_t sent_instant;
 		struct msghdr msg_header = {0};
 
-		signal(SIGALRM, signal_handler);
-		ft_memset(&response_origin, 0, sizeof(response_origin));
-		ft_memset(ipv4_header, 0, sizeof(ipv4_header));
-		ft_memset(response_data, 0, sizeof(response_data));
+		new_iteration(&response_origin, &ipv4_header, &response_data, response_buffer_info);
 
-		struct iovec response_buffer_info[2] = {
-			(struct iovec)
-			{ .iov_base = ipv4_header, .iov_len = sizeof(ipv4_header)},
-			(struct iovec)
-			{ .iov_base = response_data, .iov_len = sizeof(response_data)},
-		};
-
-
-		t_result send_res = send_icmp_echo(conn_fd, &sequence, sockaddr);
+		t_result send_res = send_icmp_echo(ping.conn_fd, &sequence, ping.sockaddr);
 
 		if (result_is_err(&send_res))
 		{
 			if (send_res.payload.error_code == EINTR)
 				break;
-			fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(send_res.payload.error_code));
+			fprintf(stderr, "ft_ping: %s: %s\n", ping.address.data, strerror(send_res.payload.error_code));
 			exit(2);
 		}
 
@@ -276,7 +320,7 @@ int main(int argc, char **argv)
 			msg_header.msg_iov = response_buffer_info;
 			msg_header.msg_iovlen = 2;
 
-			ssize_t read = recvmsg(conn_fd, &msg_header, MSG_WAITALL);
+			ssize_t read = recvmsg(ping.conn_fd, &msg_header, MSG_WAITALL);
 			uint64_t response_instant = now_micro();
 
 			response_time = response_instant - sent_instant;
@@ -289,7 +333,7 @@ int main(int argc, char **argv)
 					break;
 				}
 
-				fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
+				fprintf(stderr, "ft_ping: %s: %s\n", ping.address.data, strerror(errno));
 				exit(2);
 			}
 
@@ -395,44 +439,13 @@ int main(int argc, char **argv)
 
 		alarm(0);
 
-		if (*last_signal() == SIGINT) {
+		if (*last_signal() == SIGINT)
 			break;
-		}
-
 		else if (responded)
-		{
-			char response_ip[INET_ADDRSTRLEN] = {0};
+			received_stats(&ping, message, response_time, sequence, ipv4_header, response_icmphdr);
 
-			if (!message)
-				pstats_responded(response_time);
-
-			inet_ntop(AF_INET, &((struct sockaddr_in *)&sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
-
-			if (message)
-				printf("From %s (%s) icmp_seq=%u %s\n",
-					resolve_cache_addr(&sockaddr.sock_addr, sockaddr.sock_addr_len),
-					response_ip,
-					sequence,
-					message
-				);
-			else
-			{
-				uint16_t packet_len = ((uint16_t)ipv4_header[2] << 8) | ipv4_header[3];
-				printf("%u bytes from %s (%s): icmp_seq=%u ttl=%u time=",
-					packet_len,
-					resolve_cache_addr(&sockaddr.sock_addr, sockaddr.sock_addr_len),
-					response_ip,
-					response_icmphdr->un.echo.sequence,
-					ipv4_header[8]
-				);
-
-				print_time(response_time);
-			}
-		}
-
-		if (*last_signal() != SIGINT && response_time < 1000000) {
+		if (*last_signal() != SIGINT && response_time < 1000000)
 			usleep(1000000 - response_time);
-		}
 	}
 
 	print_end_stats();
