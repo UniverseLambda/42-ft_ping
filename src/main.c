@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/16 17:23:47 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/17 13:41:41 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "inc/cli.h"
 #include "inc/ft_result.h"
@@ -41,6 +42,20 @@ typedef struct s_initedping
 	t_string		address;
 	int				conn_fd;
 }	t_initedping;
+
+typedef struct s_iter_info
+{
+	struct sockaddr	response_origin;
+	unsigned char	ipv4_header[20];
+	unsigned char	response_data[512];
+	struct iovec	response_buffer_info[2];
+	struct icmphdr	*response_icmphdr;
+	struct msghdr	msg_header;
+	uint64_t		sent_instant;
+	bool			responded;
+	uint64_t		responded_time;
+	const char		*error_message;
+}	t_iter_info;
 
 int usleep(useconds_t usec);
 
@@ -128,6 +143,86 @@ t_sockaddr_res	select_interface(t_string address)
 	return ((t_sockaddr_res){ .sock_addr = selected_address, .sock_addr_len = selected_addresslen });
 }
 
+
+static const char *get_error(uint16_t type, uint16_t code)
+{
+	if (type == 3)
+	{
+		if (code == 0)
+			return ("Destination Net Unreachable");
+		else if (code == 1)
+			return ("Destination Host Unreachable");
+		else if (code == 2)
+			return ("Destination Protocol Unreachable");
+		else if (code == 3)
+			return ("Destination Port Unreachable");
+		else if (code == 4)
+			return ("Frag needed and DF set");
+		else if (code == 5)
+			return ("Source Route Failed");
+		else if (code == 6)
+			return ("Destination Net Unknown");
+		else if (code == 7)
+			return ("Destination Host Unknown");
+		else if (code == 8)
+			return ("Source Host Isolated");
+		else if (code == 9)
+			return ("Destination Net Prohibited");
+		else if (code == 10)
+			return ("Destination Host Prohibited");
+		else if (code == 11)
+			return ("Destination Net Unreachable for Type of Service");
+		else if (code == 12)
+			return ("Destination Host Unreachable for Type of Service");
+		else if (code == 13)
+			return ("Packet filtered");
+		else if (code == 14)
+			return ("Precedence Violation");
+		else if (code == 15)
+			return ("Precedence Cutoff");
+	}
+	else if (type == 4)
+		return ("Source Quench");
+	else if (type == 5)
+	{
+		if (code == 0)
+			return ("Redirect Network");
+		else if (code == 1)
+			return ("Redirect Type of Service and Network");
+		else if (code == 2)
+			return ("Redirect Host");
+		else if (code == 3)
+			return ("Redirect Type of Service and Host");
+		else
+			return ("Unknown redirection");
+	}
+	else if (type == 5)
+	{
+		if (code == 0)
+			return ("Redirect Network");
+		else if (code == 1)
+			return ("Redirect Type of Service and Network");
+		else if (code == 2)
+			return ("Redirect Host");
+		else if (code == 3)
+			return ("Redirect Type of Service and Host");
+	}
+	else if (type == 11)
+	{
+		if (code == 0)
+			return ("Time to live exceeded");
+		else if (code == 1)
+			return ("Frag reassembly time exceeded");
+		else
+			return ("Unknown Time Exceeded Message code");
+	}
+	else if (type == 12 && code == 0)
+		return ("Parameter problem: pointer");
+	else if (type == 13 && code == 0)
+		return ("Parameter problem: pointer");
+	return ("Unknown error");
+}
+
 static void	print_time(uint64_t time)
 {
 	const uint64_t	left	= time / 1000;
@@ -209,35 +304,34 @@ static char *resolve_cache_addr(const t_sockaddr_res *sockaddr)
 	return (buf);
 }
 
-static void received_stats(const t_initedping *ping, const char *message, uint64_t response_time, uint16_t sequence, uint8_t *ipv4_header, struct icmphdr *icmphdr)
+static void received_stats(const t_initedping *ping, t_iter_info *iter, uint16_t sequence)
 {
 	char response_ip[INET_ADDRSTRLEN];
 	uint16_t packet_len;
 
-	if (!message)
-		pstats_responded(response_time);
+	if (!iter->error_message)
+		pstats_responded(iter->responded_time);
 
 	inet_ntop(AF_INET, &((struct sockaddr_in *)&ping->sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
 
-	if (message)
+	if (iter->error_message)
 		printf("From %s (%s) icmp_seq=%u %s\n",
 			resolve_cache_addr(&ping->sockaddr),
 			response_ip,
 			sequence,
-			message
+			iter->error_message
 		);
 	else
 	{
-		packet_len = (((uint16_t)ipv4_header[2] << 8) | ipv4_header[3]) - ((ipv4_header[0] & 0x0F) * 4);
+		packet_len = (((uint16_t)iter->ipv4_header[2] << 8) | iter->ipv4_header[3]) - ((iter->ipv4_header[0] & 0x0F) * 4);
 		printf("%u bytes from %s (%s): icmp_seq=%u ttl=%u time=",
 			packet_len,
 			resolve_cache_addr(&ping->sockaddr),
 			response_ip,
-			icmphdr->un.echo.sequence,
-			ipv4_header[8]
+			iter->response_icmphdr->un.echo.sequence,
+			iter->ipv4_header[8]
 		);
-
-		print_time(response_time);
+		print_time(iter->responded_time);
 	}
 }
 
@@ -261,194 +355,116 @@ t_initedping ping_init(int argc, char **argv)
 	return (res);
 }
 
-void new_iteration(void *response_origin, void *ipv4_header, void *response_data, struct iovec *response_buffer_info)
+void new_iteration(t_iter_info *iter)
 {
 	signal(SIGALRM, signal_handler);
-	ft_memset(response_origin, 0, sizeof(struct sockaddr));
-	ft_memset(ipv4_header, 0, 20);
-	ft_memset(response_data, 0, 512);
+	iter->sent_instant = now_micro();
+	ft_memset(&(iter->response_origin), 0, sizeof(struct sockaddr));
+	ft_memset(&(iter->ipv4_header), 0, 20);
+	ft_memset(&(iter->response_data), 0, 512);
+	iter->response_buffer_info[0] = (struct iovec)
+			{ .iov_base = &(iter->ipv4_header), .iov_len = 20};
+	iter->response_buffer_info[1] = (struct iovec)
+			{ .iov_base = &(iter->response_data), .iov_len = 512};
+	iter->error_message = NULL;
+	iter->responded = true;
+}
 
-	response_buffer_info[0] = (struct iovec)
-			{ .iov_base = ipv4_header, .iov_len = 20};
-	response_buffer_info[1] = (struct iovec)
-			{ .iov_base = response_data, .iov_len = 512};
+static bool try_send_message(const t_initedping *ping, uint16_t *sequence)
+{
+	t_result send_res;
+
+	send_res = send_icmp_echo(ping->conn_fd, sequence, ping->sockaddr);
+	if (result_is_err(&send_res))
+	{
+		if (send_res.payload.error_code == EINTR)
+			return (false);
+		fprintf(stderr, "ft_ping: %s: %s\n", ping->address.data, strerror(send_res.payload.error_code));
+		exit(2);
+	}
+	return (true);
+}
+
+static void new_listen_try(t_iter_info *iter)
+{
+	iter->msg_header.msg_name = &(iter->response_origin);
+	iter->msg_header.msg_namelen = sizeof(iter->response_origin);
+	iter->msg_header.msg_iov = (iter->response_buffer_info);
+	iter->msg_header.msg_iovlen = 2;
+}
+
+static bool try_listen_for_answer(const t_initedping *ping, t_iter_info *iter, uint16_t sequence)
+{
+	ssize_t read;
+
+	read = recvmsg(ping->conn_fd, &iter->msg_header, MSG_WAITALL);
+	iter->responded_time = now_micro() - iter->sent_instant;
+	if (read <= 0)
+	{
+		if (errno == EINTR)
+		{
+			iter->responded = false;
+			return (true);
+		}
+		fprintf(stderr, "ft_ping: %s: %s\n", ping->address.data, strerror(errno));
+		exit(2);
+	}
+
+	size_t icmphdr_offset = (((iter->ipv4_header[0]) & 0x0F) - 5) * 4;
+	// size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
+
+	iter->response_icmphdr = (struct icmphdr *)(iter->response_data + (icmphdr_offset));
+	// response_payload = response_data + icmp_data_offset;
+
+	// TODO: check if underlying packet is ours
+
+	if (iter->response_icmphdr->type == 0)
+	{
+		if (iter->response_icmphdr->un.echo.id == getpid() && iter->response_icmphdr->un.echo.sequence == sequence)
+			return (true);
+	}
+	else if (iter->response_icmphdr->type != 8)
+	{
+		iter->error_message = get_error(iter->response_icmphdr->type, iter->response_icmphdr->code);
+		return (true);
+	}
+	return (false);
+}
+
+static void start_ping(const t_initedping *ping)
+{
+	uint16_t	sequence;
+	t_iter_info	iter;
+
+	sequence = 0;
+	printf("PING %s 56(84) bytes\n", ping->address.data);
+	while (1)
+	{
+		if (!try_send_message(ping, &sequence))
+			break;
+		new_iteration(&iter);
+		alarm(1);
+		while (1)
+		{
+			new_listen_try(&iter);
+			if (try_listen_for_answer(ping, &iter, sequence))
+				break;
+		}
+		alarm(0);
+		if (*last_signal() == SIGINT)
+			break;
+		else if (iter.responded)
+			received_stats(ping, &iter, sequence);
+		if (*last_signal() != SIGINT && iter.responded_time < 1000000)
+			usleep(1000000 - iter.responded_time);
+	}
 }
 
 int main(int argc, char **argv)
 {
-	uint16_t sequence = 0;
 	const t_initedping ping = ping_init(argc, argv);
-	struct sockaddr response_origin;
-	unsigned char ipv4_header[20];
-	unsigned char response_data[512];
-	struct iovec response_buffer_info[2];
 
-
-	printf("PING %s 56(84) bytes\n", ping.address.data);
-
-	while (1)
-	{
-		uint64_t sent_instant;
-		struct msghdr msg_header = {0};
-
-		new_iteration(&response_origin, &ipv4_header, &response_data, response_buffer_info);
-
-		t_result send_res = send_icmp_echo(ping.conn_fd, &sequence, ping.sockaddr);
-
-		if (result_is_err(&send_res))
-		{
-			if (send_res.payload.error_code == EINTR)
-				break;
-			fprintf(stderr, "ft_ping: %s: %s\n", ping.address.data, strerror(send_res.payload.error_code));
-			exit(2);
-		}
-
-		sent_instant = now_micro();
-
-		uint64_t response_time = 0;
-		struct icmphdr *response_icmphdr;
-		bool responded = true;
-		// unsigned char *response_payload;
-
-		const char *message = NULL;
-
-		alarm(1);
-		while (1)
-		{
-			msg_header.msg_name = &response_origin;
-			msg_header.msg_namelen = sizeof(response_origin);
-			msg_header.msg_iov = response_buffer_info;
-			msg_header.msg_iovlen = 2;
-
-			ssize_t read = recvmsg(ping.conn_fd, &msg_header, MSG_WAITALL);
-			uint64_t response_instant = now_micro();
-
-			response_time = response_instant - sent_instant;
-
-			if (read <= 0)
-			{
-				if (errno == EINTR)
-				{
-					responded = false;
-					break;
-				}
-
-				fprintf(stderr, "ft_ping: %s: %s\n", ping.address.data, strerror(errno));
-				exit(2);
-			}
-
-			size_t icmphdr_offset = (((ipv4_header[0]) & 0x0F) - 5) * 4;
-			// size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
-
-			response_icmphdr = (struct icmphdr *)(response_data + (icmphdr_offset));
-			// response_payload = response_data + icmp_data_offset;
-
-			// TODO: check if underlying packet is ours
-
-			if (response_icmphdr->type == 0)
-			{
-				if (response_icmphdr->un.echo.id == getpid() && response_icmphdr->type == 0 && response_icmphdr->un.echo.sequence == sequence)
-					break;
-			}
-			else if (response_icmphdr->type == 3)
-			{
-				if (response_icmphdr->code == 0)
-					message = "Destination Net Unreachable";
-				else if (response_icmphdr->code == 1)
-					message = "Destination Host Unreachable";
-				else if (response_icmphdr->code == 2)
-					message = "Destination Protocol Unreachable";
-				else if (response_icmphdr->code == 3)
-					message = "Destination Port Unreachable";
-				else if (response_icmphdr->code == 4)
-					message = "Frag needed and DF set";
-				else if (response_icmphdr->code == 5)
-					message = "Source Route Failed";
-				else if (response_icmphdr->code == 6)
-					message = "Destination Net Unknown";
-				else if (response_icmphdr->code == 7)
-					message = "Destination Host Unknown";
-				else if (response_icmphdr->code == 8)
-					message = "Source Host Isolated";
-				else if (response_icmphdr->code == 9)
-					message = "Destination Net Prohibited";
-				else if (response_icmphdr->code == 10)
-					message = "Destination Host Prohibited";
-				else if (response_icmphdr->code == 11)
-					message = "Destination Net Unreachable for Type of Service";
-				else if (response_icmphdr->code == 12)
-					message = "Destination Host Unreachable for Type of Service";
-				else if (response_icmphdr->code == 13)
-					message = "Packet filtered";
-				else if (response_icmphdr->code == 14)
-					message = "Precedence Violation";
-				else if (response_icmphdr->code == 15)
-					message = "Precedence Cutoff";
-			}
-			else if (response_icmphdr->type == 4)
-			{
-				message = "Source Quench";
-			}
-			else if (response_icmphdr->type == 5)
-			{
-				if (response_icmphdr->code == 0)
-					message = "Redirect Network";
-				else if (response_icmphdr->code == 1)
-					message = "Redirect Type of Service and Network";
-				else if (response_icmphdr->code == 2)
-					message = "Redirect Host";
-				else if (response_icmphdr->code == 3)
-					message = "Redirect Type of Service and Host";
-				else
-					message = "Unknown redirection";
-			}
-			else if (response_icmphdr->type == 5)
-			{
-				if (response_icmphdr->code == 0)
-					message = "Redirect Network";
-				else if (response_icmphdr->code == 1)
-					message = "Redirect Type of Service and Network";
-				else if (response_icmphdr->code == 2)
-					message = "Redirect Host";
-				else if (response_icmphdr->code == 3)
-					message = "Redirect Type of Service and Host";
-			}
-			else if (response_icmphdr->type == 11)
-			{
-				if (response_icmphdr->code == 0)
-					message = "Time to live exceeded";
-				else if (response_icmphdr->code == 1)
-					message = "Frag reassembly time exceeded";
-				else
-					message = "Unknown Time Exceeded Message code";
-			}
-			else if (response_icmphdr->type == 12)
-			{
-				if (response_icmphdr->code == 0)
-					message = "Parameter problem: pointer";
-			}
-			else if (response_icmphdr->type == 13)
-			{
-				if (response_icmphdr->code == 0)
-					message = "Parameter problem: pointer";
-			}
-
-			if (message)
-				break;
-		}
-
-		alarm(0);
-
-		if (*last_signal() == SIGINT)
-			break;
-		else if (responded)
-			received_stats(&ping, message, response_time, sequence, ipv4_header, response_icmphdr);
-
-		if (*last_signal() != SIGINT && response_time < 1000000)
-			usleep(1000000 - response_time);
-	}
-
+	start_ping(&ping);
 	print_end_stats();
-
 	return (0);
 }
