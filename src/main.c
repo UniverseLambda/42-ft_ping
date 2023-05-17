@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/17 13:41:41 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/17 16:47:39 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ typedef struct s_initedping
 
 typedef struct s_iter_info
 {
-	struct sockaddr	response_origin;
+	t_sockaddr_res	response_origin;
 	unsigned char	ipv4_header[20];
 	unsigned char	response_data[512];
 	struct iovec	response_buffer_info[2];
@@ -300,37 +300,41 @@ static char *resolve_cache_addr(const t_sockaddr_res *sockaddr)
 		return (buf);
 	last_sockaddr = *sockaddr;
 	ft_memset(buf, 0, sizeof(buf));
-	getnameinfo(&last_sockaddr.sock_addr, last_sockaddr.sock_addr_len, buf, sizeof(buf), NULL, 0, 0);
+	if (getnameinfo(&last_sockaddr.sock_addr, sizeof(last_sockaddr.sock_addr), buf, sizeof(buf), NULL, 0, NI_NAMEREQD))
+		buf[0] = '\0';
 	return (buf);
 }
 
-static void received_stats(const t_initedping *ping, t_iter_info *iter, uint16_t sequence)
+static void print_addr(t_sockaddr_res *sockaddr, char *response_ip)
+{
+	const char *addr	= resolve_cache_addr(sockaddr);
+
+	if (!addr || !(addr[0]))
+		printf("%s", response_ip);
+	else
+		printf("%s (%s)", addr, response_ip);
+}
+
+static void received_stats(t_iter_info *iter, uint16_t sequence)
 {
 	char response_ip[INET_ADDRSTRLEN];
 	uint16_t packet_len;
 
 	if (!iter->error_message)
 		pstats_responded(iter->responded_time);
-
-	inet_ntop(AF_INET, &((struct sockaddr_in *)&ping->sockaddr.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
-
+	inet_ntop(AF_INET, &((struct sockaddr_in *)&iter->response_origin.sock_addr)->sin_addr, response_ip, INET_ADDRSTRLEN);
 	if (iter->error_message)
-		printf("From %s (%s) icmp_seq=%u %s\n",
-			resolve_cache_addr(&ping->sockaddr),
-			response_ip,
-			sequence,
-			iter->error_message
-		);
+	{
+		printf("From ");
+		print_addr(&iter->response_origin, response_ip);
+		printf(" icmp_seq=%u %s\n", sequence, iter->error_message);
+	}
 	else
 	{
 		packet_len = (((uint16_t)iter->ipv4_header[2] << 8) | iter->ipv4_header[3]) - ((iter->ipv4_header[0] & 0x0F) * 4);
-		printf("%u bytes from %s (%s): icmp_seq=%u ttl=%u time=",
-			packet_len,
-			resolve_cache_addr(&ping->sockaddr),
-			response_ip,
-			iter->response_icmphdr->un.echo.sequence,
-			iter->ipv4_header[8]
-		);
+		printf("%u bytes from ", packet_len);
+		print_addr(&iter->response_origin, response_ip);
+		printf(": icmp_seq=%u ttl=%u time=", iter->response_icmphdr->un.echo.sequence, iter->ipv4_header[8]);
 		print_time(iter->responded_time);
 	}
 }
@@ -359,7 +363,7 @@ void new_iteration(t_iter_info *iter)
 {
 	signal(SIGALRM, signal_handler);
 	iter->sent_instant = now_micro();
-	ft_memset(&(iter->response_origin), 0, sizeof(struct sockaddr));
+	ft_memset(&(iter->response_origin), 0, sizeof(iter->response_origin));
 	ft_memset(&(iter->ipv4_header), 0, 20);
 	ft_memset(&(iter->response_data), 0, 512);
 	iter->response_buffer_info[0] = (struct iovec)
@@ -387,37 +391,32 @@ static bool try_send_message(const t_initedping *ping, uint16_t *sequence)
 
 static void new_listen_try(t_iter_info *iter)
 {
-	iter->msg_header.msg_name = &(iter->response_origin);
-	iter->msg_header.msg_namelen = sizeof(iter->response_origin);
+	iter->msg_header.msg_name = &(iter->response_origin.sock_addr);
+	iter->msg_header.msg_namelen = sizeof(iter->response_origin.sock_addr);
 	iter->msg_header.msg_iov = (iter->response_buffer_info);
 	iter->msg_header.msg_iovlen = 2;
 }
 
-static bool try_listen_for_answer(const t_initedping *ping, t_iter_info *iter, uint16_t sequence)
+static size_t get_icmphdr_offset(char *ipv4_header)
 {
-	ssize_t read;
+	return ((ipv4_header[0] & 0x0F) * 4);
+}
 
-	read = recvmsg(ping->conn_fd, &iter->msg_header, MSG_WAITALL);
-	iter->responded_time = now_micro() - iter->sent_instant;
-	if (read <= 0)
-	{
-		if (errno == EINTR)
-		{
-			iter->responded = false;
-			return (true);
-		}
-		fprintf(stderr, "ft_ping: %s: %s\n", ping->address.data, strerror(errno));
-		exit(2);
-	}
+static bool is_ours(char *icmp_buf, uint16_t sequence)
+{
+	const struct icmphdr *icmp_hdr = (struct icmphdr *)icmp_buf;
 
-	size_t icmphdr_offset = (((iter->ipv4_header[0]) & 0x0F) - 5) * 4;
-	// size_t icmp_data_offset = icmphdr_offset + sizeof(struct icmphdr);
+	if (icmp_hdr->type == 0 || icmp_hdr->type == 8)
+		return (icmp_hdr->un.echo.id == getpid() && icmp_hdr->un.echo.sequence == sequence);
+	else if (icmp_hdr->type < 13)
+		return (is_ours(icmp_buf + 8 + (get_icmphdr_offset(icmp_buf + 8)), sequence));
+	return (false);
+}
 
-	iter->response_icmphdr = (struct icmphdr *)(iter->response_data + (icmphdr_offset));
-	// response_payload = response_data + icmp_data_offset;
-
-	// TODO: check if underlying packet is ours
-
+static bool handle_packet(t_iter_info *iter, uint16_t sequence)
+{
+	if (!is_ours((char *)(iter->response_icmphdr), sequence))
+		return (false);
 	if (iter->response_icmphdr->type == 0)
 	{
 		if (iter->response_icmphdr->un.echo.id == getpid() && iter->response_icmphdr->un.echo.sequence == sequence)
@@ -429,6 +428,27 @@ static bool try_listen_for_answer(const t_initedping *ping, t_iter_info *iter, u
 		return (true);
 	}
 	return (false);
+}
+
+static bool try_listen_for_answer(const t_initedping *ping, t_iter_info *iter, uint16_t sequence)
+{
+	size_t	icmphdr_offset;
+
+	if (recvmsg(ping->conn_fd, &iter->msg_header, MSG_WAITALL) <= 0)
+	{
+		if (errno == EINTR)
+		{
+			iter->responded = false;
+			return (true);
+		}
+		fprintf(stderr, "ft_ping: %s: %s\n", ping->address.data, strerror(errno));
+		exit(2);
+	}
+	iter->response_origin.sock_addr_len = iter->msg_header.msg_namelen;
+	iter->responded_time = now_micro() - iter->sent_instant;
+	icmphdr_offset = get_icmphdr_offset((char *)iter->ipv4_header) - (4 * 5);
+	iter->response_icmphdr = (struct icmphdr *)(iter->response_data + (icmphdr_offset));
+	return (handle_packet(iter, sequence));
 }
 
 static void start_ping(const t_initedping *ping)
@@ -454,7 +474,7 @@ static void start_ping(const t_initedping *ping)
 		if (*last_signal() == SIGINT)
 			break;
 		else if (iter.responded)
-			received_stats(ping, &iter, sequence);
+			received_stats(&iter, sequence);
 		if (*last_signal() != SIGINT && iter.responded_time < 1000000)
 			usleep(1000000 - iter.responded_time);
 	}
