@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/17 16:47:39 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/17 16:53:22 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,9 +76,6 @@ static struct addrinfo *resolve_host(t_string host)
 	hints.ai_family = AF_INET;			/* Allow IPv4 only */
 	hints.ai_socktype = SOCK_RAW;		/* Raw socket */
 	hints.ai_protocol = IPPROTO_ICMP;	/* ICMP protocol */
-
-	// TODO: Transparent IPv4/IPv6 support
-
 	int gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
 
 	if (gai_ret_val != 0)

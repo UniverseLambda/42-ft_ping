@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   cli.c                                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
+/*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:11 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/19 10:32:29 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/17 16:53:52 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,8 +57,6 @@ static void	set_opt_flag(unsigned int *flags, char c)
 	}
 	*flags |= selected_flag;
 }
-
-// TODO: add support for arguments without '-'
 
 static t_command	parse_args(int argc, char **argv)
 {
