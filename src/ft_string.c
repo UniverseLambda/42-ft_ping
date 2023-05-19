@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_string.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: clsaad <clsaad@student.42.fr>              +#+  +:+       +#+        */
+/*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:34 by clsaad            #+#    #+#             */
-/*   Updated: 2023/04/18 16:55:38 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/19 13:37:18 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,5 +53,6 @@ void	string_foreach(t_string *self, t_foreach_handler f, void *instance)
 	while (index < self->len)
 	{
 		f(instance, self->data[index]);
+		++index;
 	}
 }

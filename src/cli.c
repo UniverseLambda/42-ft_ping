@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:11 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/17 16:53:52 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/19 13:46:21 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,41 +58,40 @@ static void	set_opt_flag(unsigned int *flags, char c)
 	*flags |= selected_flag;
 }
 
-static t_command	parse_args(int argc, char **argv)
+static t_command	parse_args(char **argv)
 {
-	int			index;
 	t_command	result;
 	bool		has_address;
 	t_string	s;
 
-	index = 0;
 	result.flags = 0;
 	has_address = false;
-	if (argc == 1)
-		err_exit("ft_ping: usage error: Destination address required\n");
-	while (++index < argc)
+	if (argv[1] == NULL)
+		err_exit("usage error: Destination address required\n");
+	while (*(++argv))
 	{
-		s = string_new(argv[index]);
+		result.flags &= ~CF_MINUS;
+		s = string_new(*argv);
 		if (string_char_at(&s, 0) == '-')
 			string_foreach(&s, (t_foreach_handler)set_opt_flag, &result.flags);
+		else if (has_address)
+			display_help();
 		else
 		{
-			if (has_address)
-				display_help();
 			has_address = true;
 			result.address = s;
 		}
 	}
 	if (!has_address && !(result.flags & CF_HELP))
-		err_exit("ft_ping: usage error: Destination address required\n");
+		err_exit("usage error: Destination address required\n");
 	return (result);
 }
 
-t_command	ftp_command(int argc, char **argv)
+t_command	ftp_command(char **argv)
 {
 	t_command	cmd;
 
-	cmd = parse_args(argc, argv);
+	cmd = parse_args(argv);
 	if (cmd.flags & CF_HELP)
 	{
 		display_help();

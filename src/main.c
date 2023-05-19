@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/19 11:01:43 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/19 11:38:51 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -398,8 +398,9 @@ static void start_ping(const t_initedping *ping)
 
 int main(int argc, char **argv)
 {
-	const t_initedping ping = ping_init(argc, argv);
+	const t_initedping ping = ping_init(argv);
 
+	(void)argc;
 	start_ping(&ping);
 	print_end_stats();
 	return (0);

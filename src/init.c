@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/19 10:51:19 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/19 11:38:13 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,14 +66,13 @@ t_sockaddr_res	select_interface(t_string address)
 }
 
 
-t_initedping ping_init(int argc, char **argv)
+t_initedping ping_init(char **argv)
 {
 	t_command		cmd;
 	t_initedping	res;
 
-	cmd = ftp_command(argc, argv);
+	cmd = ftp_command(argv);
 	res.conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	cmd = ftp_command(argc, argv);
 	if (res.conn_fd == -1)
 	{
 		fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
