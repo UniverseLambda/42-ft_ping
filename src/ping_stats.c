@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:57:00 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/16 10:11:24 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/19 10:58:09 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,13 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <sys/time.h>
+#include <stdio.h>
 
 #include "inc/ft_time.h"
 #include "inc/ft_string.h"
 #include "inc/ft_util.h"
 
-#include <sys/time.h>
 
 static struct s_ping_stats *pstats_handle(void)
 {
@@ -59,7 +60,8 @@ void	pstats_sent(void)
 	handle = pstats_handle();
 	if (handle->sent == 0)
 		handle->start = now_micro();
-	pstats_handle()->sent += 1;
+	handle->sent += 1;
+	printf("pstats_handle() += 1 (%zu)\n", handle->sent);
 }
 
 struct s_ping_stats pstats_get(void)

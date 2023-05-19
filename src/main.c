@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/17 16:53:22 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/05/19 11:01:43 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/ip.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,21 +26,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #include "inc/cli.h"
+#include "inc/init.h"
 #include "inc/ft_result.h"
 #include "inc/ft_sqrt.h"
 #include "inc/ft_string.h"
 #include "inc/ft_time.h"
 #include "inc/ft_util.h"
+#include "inc/ft_signal.h"
 #include "inc/ping_stats.h"
-
-typedef struct s_initedping
-{
-	t_sockaddr_res	sockaddr;
-	t_string		address;
-	int				conn_fd;
-}	t_initedping;
 
 typedef struct s_iter_info
 {
@@ -68,37 +63,6 @@ static void make_icmp_packet(struct icmphdr *icmp_header, t_string payload, char
 	ft_memcpy(dest + sizeof(*icmp_header), &timestamp, sizeof(timestamp));
 }
 
-static struct addrinfo *resolve_host(t_string host)
-{
-	struct addrinfo hints = {0};
-	struct addrinfo *result;
-
-	hints.ai_family = AF_INET;			/* Allow IPv4 only */
-	hints.ai_socktype = SOCK_RAW;		/* Raw socket */
-	hints.ai_protocol = IPPROTO_ICMP;	/* ICMP protocol */
-	int gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
-
-	if (gai_ret_val != 0)
-	{
-		fprintf(stderr, "ft_ping: %s: %s\n", host.data, gai_strerror(gai_ret_val));
-		exit(1);
-	}
-
-	return result;
-}
-
-static int *last_signal(void)
-{
-	static int	sig = 0;
-
-	return (&sig);
-}
-
-static void signal_handler(int s)
-{
-	*last_signal() = s;
-}
-
 uint16_t compute_checksum(void *data, size_t data_len)
 {
 	size_t word_len = data_len / 2;
@@ -116,30 +80,6 @@ uint16_t compute_checksum(void *data, size_t data_len)
 
 	return sum;
 }
-
-t_sockaddr_res	select_interface(t_string address)
-{
-	struct addrinfo	*current;
-	struct addrinfo	*resolved;
-	struct sockaddr selected_address = {0};
-	size_t selected_addresslen = 0;
-
-	resolved = resolve_host(address);
-	current = resolved;
-	while (current != NULL)
-	{
-		if (current->ai_addr && current->ai_addrlen > 0)
-		{
-			selected_address = *(current->ai_addr);
-			selected_addresslen = current->ai_addrlen;
-			break;
-		}
-		current = current->ai_next;
-	}
-	freeaddrinfo(resolved);
-	return ((t_sockaddr_res){ .sock_addr = selected_address, .sock_addr_len = selected_addresslen });
-}
-
 
 static const char *get_error(uint16_t type, uint16_t code)
 {
@@ -276,7 +216,6 @@ static void print_end_stats(void)
 		stats.received,
 		100 - ((stats.received * 100) / stats.sent),
 		(now_micro() - stats.start) / 1000);
-
 	if (stats.received == 0)
 		return;
 	average = stats.rtt_sum / stats.received;
@@ -314,8 +253,8 @@ static void print_addr(t_sockaddr_res *sockaddr, char *response_ip)
 
 static void received_stats(t_iter_info *iter, uint16_t sequence)
 {
-	char response_ip[INET_ADDRSTRLEN];
-	uint16_t packet_len;
+	char		response_ip[INET_ADDRSTRLEN];
+	uint16_t	packet_len;
 
 	if (!iter->error_message)
 		pstats_responded(iter->responded_time);
@@ -334,26 +273,6 @@ static void received_stats(t_iter_info *iter, uint16_t sequence)
 		printf(": icmp_seq=%u ttl=%u time=", iter->response_icmphdr->un.echo.sequence, iter->ipv4_header[8]);
 		print_time(iter->responded_time);
 	}
-}
-
-t_initedping ping_init(int argc, char **argv)
-{
-	t_command		cmd;
-	t_initedping	res;
-
-	cmd = ftp_command(argc, argv);
-	res.conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	cmd = ftp_command(argc, argv);
-	if (res.conn_fd == -1)
-	{
-		fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
-		exit(2);
-	}
-	res.sockaddr = select_interface(cmd.address);
-	res.address = cmd.address;
-	pstats_init(cmd.address);
-	signal(SIGINT, signal_handler);
-	return (res);
 }
 
 void new_iteration(t_iter_info *iter)
