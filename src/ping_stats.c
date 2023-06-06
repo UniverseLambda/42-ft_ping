@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/04/19 15:57:00 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/19 11:45:39 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/06 15:08:13 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,15 +20,14 @@
 #include "inc/ft_string.h"
 #include "inc/ft_util.h"
 
-
-static struct s_ping_stats *pstats_handle(void)
+static struct s_ping_stats	*pstats_handle(void)
 {
 	static struct s_ping_stats	stats;
 
 	return (&stats);
 }
 
-void pstats_init(t_string user_addr)
+void	pstats_init(t_string user_addr)
 {
 	struct s_ping_stats	*handle;
 
@@ -38,7 +37,7 @@ void pstats_init(t_string user_addr)
 	handle->min = UINT64_MAX;
 }
 
-void pstats_responded(uint64_t rtt)
+void	pstats_responded(uint64_t rtt)
 {
 	struct s_ping_stats	*handle;
 
@@ -62,7 +61,7 @@ void	pstats_sent(void)
 	handle->sent += 1;
 }
 
-struct s_ping_stats pstats_get(void)
+struct s_ping_stats	pstats_get(void)
 {
 	return (*pstats_handle());
 }

@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/19 11:38:13 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/06 15:30:03 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,31 +24,35 @@
 #include "inc/ping_stats.h"
 #include "inc/ft_signal.h"
 
-static struct addrinfo *resolve_host(t_string host)
+static struct addrinfo	*resolve_host(t_string host)
 {
-	struct addrinfo hints = {0};
-	struct addrinfo *result;
+	struct addrinfo	hints;
+	struct addrinfo	*result;
+	int				gai_ret_val;
 
-	hints.ai_family = AF_INET;			/* Allow IPv4 only */
-	hints.ai_socktype = SOCK_RAW;		/* Raw socket */
-	hints.ai_protocol = IPPROTO_ICMP;	/* ICMP protocol */
-	int gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
+	hints = (struct addrinfo){0};
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_RAW;
+	hints.ai_protocol = IPPROTO_ICMP;
+	gai_ret_val = getaddrinfo(host.data, NULL, &hints, &result);
 	if (gai_ret_val != 0)
 	{
-		fprintf(stderr, "ft_ping: %s: %s\n", host.data, gai_strerror(gai_ret_val));
+		fprintf(stderr,
+			"ft_ping: %s: %s\n", host.data, gai_strerror(gai_ret_val));
 		exit(1);
 	}
-
-	return result;
+	return (result);
 }
 
 t_sockaddr_res	select_interface(t_string address)
 {
 	struct addrinfo	*current;
 	struct addrinfo	*resolved;
-	struct sockaddr selected_address = {0};
-	size_t selected_addresslen = 0;
+	struct sockaddr	selected_address;
+	size_t			selected_addresslen;
 
+	selected_address = (struct sockaddr){0};
+	selected_addresslen = 0;
 	resolved = resolve_host(address);
 	current = resolved;
 	while (current != NULL)
@@ -57,16 +61,17 @@ t_sockaddr_res	select_interface(t_string address)
 		{
 			selected_address = *(current->ai_addr);
 			selected_addresslen = current->ai_addrlen;
-			break;
+			break ;
 		}
 		current = current->ai_next;
 	}
 	freeaddrinfo(resolved);
-	return ((t_sockaddr_res){ .sock_addr = selected_address, .sock_addr_len = selected_addresslen });
+	return ((t_sockaddr_res){
+		.sock_addr = selected_address, .sock_addr_len = selected_addresslen
+	});
 }
 
-
-t_initedping ping_init(char **argv)
+t_initedping	ping_init(char **argv)
 {
 	t_command		cmd;
 	t_initedping	res;

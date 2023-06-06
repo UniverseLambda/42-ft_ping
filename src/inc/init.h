@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:37:44 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/19 11:38:35 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/06 15:09:48 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,6 @@ typedef struct s_initedping
 	int				conn_fd;
 }	t_initedping;
 
-t_initedping ping_init(char **argv);
+t_initedping	ping_init(char **argv);
 
 #endif // INIT_H

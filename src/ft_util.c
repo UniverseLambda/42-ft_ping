@@ -6,26 +6,26 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:56 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/16 14:39:26 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/06 15:07:14 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <unistd.h>
 
-void *ft_memset(void *dest, int v, size_t n)
+void	*ft_memset(void *dest, int v, size_t n)
 {
-    size_t	i;
+	size_t	i;
 
 	i = 0;
 	while (i < n)
-    {
+	{
 		((char *)dest)[i] = (char)v;
-        ++i;
-    }
-	return dest;
+		++i;
+	}
+	return (dest);
 }
 
-void *ft_memcpy(void *dest, const void *src, size_t n)
+void	*ft_memcpy(void *dest, const void *src, size_t n)
 {
 	size_t	i;
 
@@ -41,8 +41,8 @@ void *ft_memcpy(void *dest, const void *src, size_t n)
 int	ft_memcmp(const void *s1, const void *s2, size_t n)
 {
 	size_t				index;
-	const unsigned char	*c1 = s1;
-	const unsigned char	*c2 = s2;
+	const unsigned char	c1 = s1;
+	const unsigned char	c2 = s2;
 
 	if (s1 == s2)
 		return (0);

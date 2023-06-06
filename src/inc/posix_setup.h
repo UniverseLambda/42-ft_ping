@@ -1,19 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_signal.h                                        :+:      :+:    :+:   */
+/*   posix_setup.h                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/19 10:47:18 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/06 15:09:42 by clsaad           ###   ########.fr       */
+/*   Created: 2023/06/06 15:13:13 by clsaad            #+#    #+#             */
+/*   Updated: 2023/06/06 15:13:44 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_SIGNAL_H
-# define FT_SIGNAL_H
+#ifndef POSIX_SETUP_H
+# define POSIX_SETUP_H
 
-int		*last_signal(void);
-void	signal_handler(int s);
+# define _POSIX_C_SOURCE 200112L
 
-#endif // FT_SIGNAL_H
+#endif // POSIX_SETUP_H
