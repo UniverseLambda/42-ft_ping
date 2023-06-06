@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/06 16:39:20 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/06 17:03:49 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,16 +29,17 @@
 #include <signal.h>
 
 #include "inc/cli.h"
-#include "inc/init.h"
 #include "inc/ft_result.h"
+#include "inc/ft_signal.h"
 #include "inc/ft_sqrt.h"
 #include "inc/ft_string.h"
 #include "inc/ft_time.h"
 #include "inc/ft_util.h"
-#include "inc/ft_signal.h"
+#include "inc/get_error.h"
+#include "inc/init.h"
 #include "inc/ping_stats.h"
 
-typedef struct icmphdr t_icmphdr;
+typedef struct icmphdr	t_icmphdr;
 typedef struct s_iter_info
 {
 	t_sockaddr_res	resp_origin;
@@ -61,7 +62,7 @@ static struct sockaddr_in	*sockaddr_in(void *ptr)
 }
 
 static void	make_icmp_packet(
-	struct icmphdr *icmp_header, t_string payload, char *dest)
+	t_icmphdr *icmp_header, t_string payload, char *dest)
 {
 	const uint64_t	timestamp = now_sec();
 
@@ -89,85 +90,6 @@ uint16_t	compute_checksum(void *data, size_t data_len)
 		++i;
 	}
 	return (sum);
-}
-
-static const char	*get_error(uint16_t type, uint16_t code)
-{
-	if (type == 3)
-	{
-		if (code == 0)
-			return ("Destination Net Unreachable");
-		else if (code == 1)
-			return ("Destination Host Unreachable");
-		else if (code == 2)
-			return ("Destination Protocol Unreachable");
-		else if (code == 3)
-			return ("Destination Port Unreachable");
-		else if (code == 4)
-			return ("Frag needed and DF set");
-		else if (code == 5)
-			return ("Source Route Failed");
-		else if (code == 6)
-			return ("Destination Net Unknown");
-		else if (code == 7)
-			return ("Destination Host Unknown");
-		else if (code == 8)
-			return ("Source Host Isolated");
-		else if (code == 9)
-			return ("Destination Net Prohibited");
-		else if (code == 10)
-			return ("Destination Host Prohibited");
-		else if (code == 11)
-			return ("Destination Net Unreachable for Type of Service");
-		else if (code == 12)
-			return ("Destination Host Unreachable for Type of Service");
-		else if (code == 13)
-			return ("Packet filtered");
-		else if (code == 14)
-			return ("Precedence Violation");
-		else if (code == 15)
-			return ("Precedence Cutoff");
-	}
-	else if (type == 4)
-		return ("Source Quench");
-	else if (type == 5)
-	{
-		if (code == 0)
-			return ("Redirect Network");
-		else if (code == 1)
-			return ("Redirect Type of Service and Network");
-		else if (code == 2)
-			return ("Redirect Host");
-		else if (code == 3)
-			return ("Redirect Type of Service and Host");
-		else
-			return ("Unknown redirection");
-	}
-	else if (type == 5)
-	{
-		if (code == 0)
-			return ("Redirect Network");
-		else if (code == 1)
-			return ("Redirect Type of Service and Network");
-		else if (code == 2)
-			return ("Redirect Host");
-		else if (code == 3)
-			return ("Redirect Type of Service and Host");
-	}
-	else if (type == 11)
-	{
-		if (code == 0)
-			return ("Time to live exceeded");
-		else if (code == 1)
-			return ("Frag reassembly time exceeded");
-		else
-			return ("Unknown Time Exceeded Message code");
-	}
-	else if (type == 12 && code == 0)
-		return ("Parameter problem: pointer");
-	else if (type == 13 && code == 0)
-		return ("Parameter problem: pointer");
-	return ("Unknown error");
 }
 
 static void	print_time(uint64_t time)
@@ -342,13 +264,16 @@ static size_t	get_icmphdr_offset(char *ipv4_header)
 static bool	is_ours(char *icmp_buf, uint16_t sequence)
 {
 	const t_icmphdr	*icmp_hdr = (t_icmphdr *)icmp_buf;
-	const char		*sub_hdr = icmp_buf + 8;
+	char			*sub_hdr;
 
 	if (icmp_hdr->type == 0 || icmp_hdr->type == 8)
 		return (icmp_hdr->un.echo.id == getpid()
 			&& icmp_hdr->un.echo.sequence == sequence);
 	else if (icmp_hdr->type < 13)
+	{
+		sub_hdr = icmp_buf + 8;
 		return (is_ours(sub_hdr + (get_icmphdr_offset(sub_hdr)), sequence));
+	}
 	return (false);
 }
 

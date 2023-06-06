@@ -4,8 +4,8 @@ NAME := ft_ping
 
 BUILD_TYPE := DEBUG
 
-SRC_FILES := main.c cli.c ft_util.c ft_result.c ft_string.c ping_stats.c ft_time.c ft_sqrt.c init.c ft_signal.c
-INC_FILES := cli.h ft_util.h ft_result.h ft_string.h ping_stats.h ft_time.h ft_sqrt.h init.h ft_signal.h
+SRC_FILES := cli.c ft_result.c ft_string.c ft_util.c main.c ping_stats.c ft_time.c ft_sqrt.c init.c ft_signal.c get_error.c
+INC_FILES := cli.h ft_result.h ft_string.h ft_util.h ping_stats.h ft_time.h ft_sqrt.h init.h ft_signal.h posix_setup.h get_error.h
 
 SRCS_DIR := src
 INCS_DIR := inc
