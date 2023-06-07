@@ -1,31 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   init.h                                             :+:      :+:    :+:   */
+/*   misc.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/19 10:37:44 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 17:14:44 by clsaad           ###   ########.fr       */
+/*   Created: 2023/06/07 17:16:49 by clsaad            #+#    #+#             */
+/*   Updated: 2023/06/07 17:20:47 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef INIT_H
-# define INIT_H
+#ifndef MISC_H
+# define MISC_H
 
-# include "posix_setup.h"
-
-# include <netdb.h>
 # include "ft_result.h"
-# include "ft_string.h"
+# include "iter.h"
 
-typedef struct s_initedping
-{
-	t_sockaddr_res	sockaddr;
-	t_string		address;
-	int				conn_fd;
-}	t_initedping;
+char	*resolve_cache_addr(const t_sockaddr_res *sockaddr);
+void	received_stats(t_iter_info *iter, uint16_t sequence);
 
-t_initedping	ping_init(char **argv);
-
-#endif // INIT_H
+#endif

@@ -1,31 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   init.h                                             :+:      :+:    :+:   */
+/*   print.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/19 10:37:44 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 17:14:44 by clsaad           ###   ########.fr       */
+/*   Created: 2023/06/07 14:35:28 by clsaad            #+#    #+#             */
+/*   Updated: 2023/06/07 15:31:03 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef INIT_H
-# define INIT_H
+#ifndef PRINT_H
+# define PRINT_H
 
-# include "posix_setup.h"
-
-# include <netdb.h>
+# include <stdint.h>
 # include "ft_result.h"
-# include "ft_string.h"
 
-typedef struct s_initedping
-{
-	t_sockaddr_res	sockaddr;
-	t_string		address;
-	int				conn_fd;
-}	t_initedping;
+void	print_time(uint64_t time);
+void	print_end_stats(void);
+void	print_addr(t_sockaddr_res *sockaddr, char *response_ip);
 
-t_initedping	ping_init(char **argv);
-
-#endif // INIT_H
+#endif
