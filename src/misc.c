@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 17:21:34 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/08 12:55:54 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 #include "inc/print.h"
 #include "inc/ping_stats.h"
 #include "inc/packet_util.h"
+#include "inc/get_error.h"
 
 char	*resolve_cache_addr(const t_sockaddr_res *sockaddr)
 {
@@ -65,4 +66,23 @@ void	received_stats(t_iter_info *iter, uint16_t sequence)
 			iter->resp_icmphdr->un.echo.sequence, iter->ipv4_header[8]);
 		print_time(iter->responded_time);
 	}
+}
+
+bool	handle_packet(t_iter_info *iter, uint16_t sequence)
+{
+	if (!is_ours((char *)(iter->resp_icmphdr), sequence))
+		return (false);
+	if (iter->resp_icmphdr->type == 0)
+	{
+		if (iter->resp_icmphdr->un.echo.id == getpid()
+			&& iter->resp_icmphdr->un.echo.sequence == sequence)
+			return (true);
+	}
+	else if (iter->resp_icmphdr->type != 8)
+	{
+		iter->error_message
+			= get_error(iter->resp_icmphdr->type, iter->resp_icmphdr->code);
+		return (true);
+	}
+	return (false);
 }

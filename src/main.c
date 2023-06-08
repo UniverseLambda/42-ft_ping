@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 17:20:57 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/08 12:55:24 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,25 +81,6 @@ static bool	try_send_message(const t_initedping *ping, uint16_t *sequence)
 		exit(2);
 	}
 	return (true);
-}
-
-static bool	handle_packet(t_iter_info *iter, uint16_t sequence)
-{
-	if (!is_ours((char *)(iter->resp_icmphdr), sequence))
-		return (false);
-	if (iter->resp_icmphdr->type == 0)
-	{
-		if (iter->resp_icmphdr->un.echo.id == getpid()
-			&& iter->resp_icmphdr->un.echo.sequence == sequence)
-			return (true);
-	}
-	else if (iter->resp_icmphdr->type != 8)
-	{
-		iter->error_message
-			= get_error(iter->resp_icmphdr->type, iter->resp_icmphdr->code);
-		return (true);
-	}
-	return (false);
 }
 
 static bool	try_listen_for_answer(
