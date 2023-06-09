@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/08 12:55:24 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/09 16:00:12 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,7 +61,7 @@ static t_result	send_icmp_echo(
 	((uint16_t *)buffer)[1]
 		= ~compute_checksum(buffer, sizeof(header) + data.len);
 	if (0 > sendto(conn_fd, buffer, sizeof(header) + data.len, 0,
-			&sa.sock_addr, sa.sock_addr_len))
+			&sa.sock_addr, sa.sock_addr_len) || *last_signal() == SIGINT)
 		return (result_err(errno));
 	pstats_sent();
 	return (result_ok((union u_resultable)0));
