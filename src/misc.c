@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/08 12:55:54 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/13 14:43:26 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ char	*resolve_cache_addr(const t_sockaddr_res *sockaddr)
 	last_sockaddr = *sockaddr;
 	ft_memset(buf, 0, sizeof(buf));
 	if (getnameinfo(&last_sockaddr.sock_addr, sizeof(last_sockaddr.sock_addr),
-			buf, sizeof(buf), NULL, 0, NI_NAMEREQD))
+			buf, sizeof(buf), NULL, 0, 0))
 		buf[0] = '\0';
 	return (buf);
 }
@@ -51,19 +51,15 @@ void	received_stats(t_iter_info *iter, uint16_t sequence)
 	inet_ntop(AF_INET, &(sockaddr_in(&iter->resp_origin.sock_addr))->sin_addr,
 		response_ip, INET_ADDRSTRLEN);
 	if (iter->error_message)
-	{
-		printf("From ");
-		print_addr(&iter->resp_origin, response_ip);
-		printf(" icmp_seq=%u %s\n", sequence, iter->error_message);
-	}
+		printf("From %s icmp_seq=%u %s\n",
+			response_ip, sequence, iter->error_message);
 	else
 	{
 		packet_len = (((uint16_t)iter->ipv4_header[2] << 8)
 				| iter->ipv4_header[3]) - ((iter->ipv4_header[0] & 0x0F) * 4);
-		printf("%u bytes from ", packet_len);
-		print_addr(&iter->resp_origin, response_ip);
-		printf(": icmp_seq=%u ttl=%u time=",
-			iter->resp_icmphdr->un.echo.sequence, iter->ipv4_header[8]);
+		printf("%u bytes from %s: icmp_seq=%u ttl=%u time=", packet_len,
+			response_ip, iter->resp_icmphdr->un.echo.sequence,
+			iter->ipv4_header[8]);
 		print_time(iter->responded_time);
 	}
 }
@@ -80,8 +76,7 @@ bool	handle_packet(t_iter_info *iter, uint16_t sequence)
 	}
 	else if (iter->resp_icmphdr->type != 8)
 	{
-		iter->error_message
-			= get_error(iter->resp_icmphdr->type, iter->resp_icmphdr->code);
+		get_error(iter->resp_icmphdr->type, iter->resp_icmphdr->code);
 		return (true);
 	}
 	return (false);

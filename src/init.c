@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/06 15:30:03 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/13 15:37:27 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,6 +85,8 @@ t_initedping	ping_init(char **argv)
 	}
 	res.sockaddr = select_interface(cmd.address);
 	res.address = cmd.address;
+	res.verbose = !!(cmd.flags & CF_VERBOSE);
+	res.icmp_ident = getpid();
 	pstats_init(cmd.address);
 	signal(SIGINT, signal_handler);
 	return (res);

@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:33:34 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 13:48:14 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/13 11:07:29 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,4 +39,5 @@ void	new_iteration(t_iter_info *iter)
 	{.iov_base = &(iter->response_data), .iov_len = 512};
 	iter->error_message = NULL;
 	iter->responded = true;
+	alarm(1);
 }

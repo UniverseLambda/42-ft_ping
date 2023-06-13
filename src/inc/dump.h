@@ -1,20 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_error.h                                        :+:      :+:    :+:   */
+/*   dump.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/06/06 16:51:00 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 14:41:50 by clsaad           ###   ########.fr       */
+/*   Created: 2023/06/13 15:10:27 by clsaad            #+#    #+#             */
+/*   Updated: 2023/06/13 16:40:42 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef GET_ERROR_H
-# define GET_ERROR_H
+#ifndef DUMP_H
+# define DUMP_H
 
-# include <stdint.h>
+# include <unistd.h>
 
-void get_error(uint16_t type, uint16_t code);
+void dump_packet(char *iphdr, char *inner_icmp);
 
-#endif // GET_ERROR_H
+#endif // DUMP_H

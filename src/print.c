@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 14:36:55 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 17:17:39 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/13 15:44:27 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,9 +32,7 @@ void	print_addr(t_sockaddr_res *sockaddr, char *response_ip)
 
 static char	*time_to_printable(char *buf, uint64_t time)
 {
-	if (time == 0)
-		return ("0");
-	snprintf(buf, 32, "%lu.%lu", time / 1000, time % 1000);
+	snprintf(buf, 32, "%lu.%.3lu", time / 1000, time % 1000);
 	return (buf);
 }
 
@@ -46,19 +44,19 @@ void	print_end_stats(void)
 	uint64_t					average;
 	uint64_t					sq_average;
 
-	printf("\n--- %s ping statistics ---\n", stats.user_addr.data);
+	printf("--- %s ping statistics ---\n", stats.user_addr.data);
 	printf("%zu packets transmitted, %zu received, "
-		"%zu%% packet loss, time %ldms\n",
+		"%zu%% packet loss\n",
 		stats.sent,
 		stats.received,
-		100 - ((stats.received * 100) / stats.sent),
-		(now_micro() - stats.start) / 1000);
+		100 - ((stats.received * 100) / stats.sent));
 	if (stats.received == 0)
 		return ;
 	average = stats.rtt_sum / stats.received;
 	sq_average = stats.rtt_sq_sum / stats.received;
 	mdev = ft_sqrt(sq_average - (average * average));
-	printf("rtt min/avg/max/mdev = %s/", time_to_printable(tmp_buf, stats.min));
+	printf("round-trip min/avg/max/stddev = %s/",
+		time_to_printable(tmp_buf, stats.min));
 	printf("%s/", time_to_printable(tmp_buf, average));
 	printf("%s/", time_to_printable(tmp_buf, stats.max));
 	printf("%s ms\n", time_to_printable(tmp_buf, mdev));
@@ -68,14 +66,6 @@ void	print_time(uint64_t time)
 {
 	const uint64_t	left = time / 1000;
 	const uint64_t	right = time % 1000;
-	char			buffer[7];
 
-	if (left >= 100)
-		printf("%lums\n", left);
-	else
-	{
-		ft_memset(buffer, 0, 6);
-		snprintf(buffer, 7, "%lu.%.3lu", left, right);
-		printf("%.*sms\n", 5 - (left != 0), buffer);
-	}
+	printf("%lu.%.3lu ms\n", left, right);
 }

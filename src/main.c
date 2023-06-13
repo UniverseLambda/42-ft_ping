@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/09 16:00:12 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/13 15:40:29 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,13 +112,11 @@ static void	start_ping(const t_initedping *ping)
 	t_iter_info	iter;
 
 	sequence = 0;
-	printf("PING %s 56(84) bytes\n", ping->address.data);
 	while (1)
 	{
 		if (!try_send_message(ping, &sequence))
 			break ;
 		new_iteration(&iter);
-		alarm(1);
 		while (1)
 		{
 			new_listen_try(&iter);
@@ -130,7 +128,7 @@ static void	start_ping(const t_initedping *ping)
 			break ;
 		else if (iter.responded)
 			received_stats(&iter, sequence);
-		if (*last_signal() != SIGINT && iter.responded_time < 1000000)
+		if (iter.responded_time < 1000000)
 			usleep(1000000 - iter.responded_time);
 	}
 }
@@ -140,6 +138,10 @@ int	main(int argc, char **argv)
 	const t_initedping	ping = ping_init(argv);
 
 	(void)argc;
+	printf("PING %s: 56 data bytes", ping.address.data);
+	if (ping.verbose)
+		printf(", id 0x%1$04x = %1$u", ping.icmp_ident);
+	printf("\n");
 	start_ping(&ping);
 	print_end_stats();
 	return (0);
