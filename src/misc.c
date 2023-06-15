@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 11:57:08 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 14:45:06 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,9 @@ void	received_stats(t_iter_info *iter)
 bool	handle_packet(t_iter_info *iter, uint16_t sequence)
 {
 	const uint16_t	type = iter->resp_icmphdr->type;
-	char			*subhdr;
+	uint8_t			*subhdr;
+	char			response_ip[INET_ADDRSTRLEN];
+	uint16_t		packet_len;
 
 	if (type == 8 || type == 13 || type == 17)
 		return (false);
@@ -73,11 +75,17 @@ bool	handle_packet(t_iter_info *iter, uint16_t sequence)
 		return (false);
 	if (type == 0)
 		return (true);
+	iter->is_error = true;
+	inet_ntop(AF_INET, &(sockaddr_in(&iter->resp_origin.sock_addr))->sin_addr,
+		response_ip, INET_ADDRSTRLEN);
+	packet_len = (((uint16_t)iter->ipv4_header[2] << 8)
+			| iter->ipv4_header[3]) - ((iter->ipv4_header[0] & 0x0F) * 4);
+	printf("%u bytes from %s: ", packet_len, response_ip);
 	get_error(type, iter->resp_icmphdr->code);
 	if (!iter->ping->verbose)
 		return (true);
-	subhdr = ((char *)iter->resp_icmphdr) + 8;
+	subhdr = ((uint8_t *)iter->resp_icmphdr) + 8;
 	subhdr += get_icmphdr_offset(subhdr);
-	dump_packet((char *)(iter->ipv4_header), subhdr);
+	dump_packet(iter->ipv4_header, subhdr);
 	return (true);
 }

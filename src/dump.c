@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/13 15:10:22 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 11:55:01 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 14:52:00 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ inline static uint16_t	ft_ntohs(uint16_t v)
 	return (v);
 }
 
-static void	dump_raw_ip(char *iphdr)
+static void	dump_raw_ip(uint8_t *iphdr)
 {
 	size_t	index;
 
@@ -38,9 +38,10 @@ static void	dump_raw_ip(char *iphdr)
 	while (index < sizeof(struct iphdr))
 	{
 		if (index % 2)
-			printf("%.2x", iphdr[index]);
+			printf("%.2x", (unsigned int)((iphdr[index])));
 		else
-			printf(" %.2x", iphdr[index]);
+			printf(" %.2x", (unsigned int)((iphdr[index])));
+		++index;
 	}
 	printf("\n");
 }
@@ -61,26 +62,21 @@ static void	dump_ip(struct iphdr *ip)
 	printf("   %1x %04x", ft_ntohs(ip->frag_off) >> 13,
 		ft_ntohs(ip->frag_off) & 0x1FFF);
 	printf("  %02x  %02x %04x", ip->ttl, ip->protocol, ft_ntohs(ip->check));
-	printf(" %u.%u.%u.%u ",
-		ip->saddr & 0xFF, (ip->saddr >> 8) & 0xFF,
-		(ip->saddr >> 16) & 0xFF, (ip->saddr >> 24) & 0xFF);
-	printf(" %u.%u.%u.%u ",
-		ip->daddr & 0xFF, (ip->daddr >> 8) & 0xFF,
-		(ip->daddr >> 16) & 0xFF, (ip->daddr >> 24) & 0xFF);
+	printf(" %u.%u.%u.%u ", (ip->saddr >> 24) & 0xFF, (ip->saddr >> 16) & 0xFF,
+		(ip->saddr >> 8) & 0xFF, ip->saddr & 0xFF);
+	printf(" %u.%u.%u.%u ", (ip->daddr >> 24) & 0xFF, (ip->daddr >> 16) & 0xFF,
+		(ip->daddr >> 8) & 0xFF, ip->daddr & 0xFF);
 	while (header_len-- > sizeof (*ip))
 		printf("%02x", *cp++);
 	printf("\n");
 }
 
-void	dump_icmp(struct icmphdr *icmp)
+void	dump_packet(uint8_t *iphdr, uint8_t *inner_icmp)
 {
-	printf("ICMP: type %u code %u, size %u, id 0x%04x, seq 0x%04x\n",
-		icmp->type, icmp->code, 8, icmp->un.echo.id, icmp->un.echo.sequence);
-}
+	const struct icmphdr	*icmp = (struct icmphdr *)inner_icmp;
 
-void	dump_packet(char *iphdr, char *inner_icmp)
-{
 	dump_raw_ip(iphdr);
 	dump_ip((struct iphdr *)iphdr);
-	dump_icmp((struct icmphdr *)inner_icmp);
+	printf("ICMP: type %u code %u, size %u, id 0x%04x, seq 0x%04x\n",
+		icmp->type, icmp->code, 8, icmp->un.echo.id, icmp->un.echo.sequence);
 }

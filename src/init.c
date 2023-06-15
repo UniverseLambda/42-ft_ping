@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/14 15:48:25 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 15:20:42 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,10 @@ t_sockaddr_res	select_interface(t_string address)
 		.sock_addr = selected_address, .sock_addr_len = selected_addresslen
 	});
 }
+
+// Add this to test the TTL
+// const int				ttl = 5;
+// setsockopt(res.conn_fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 
 t_initedping	ping_init(char **argv)
 {

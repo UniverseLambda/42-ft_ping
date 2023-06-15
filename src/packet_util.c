@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:39:29 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 11:56:49 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 15:07:05 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,12 @@
 #include "inc/ft_time.h"
 #include "inc/ft_util.h"
 
+#include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 
-size_t	get_icmphdr_offset(char *ipv4_header)
+size_t	get_icmphdr_offset(void *ipv4_header)
 {
-	return ((ipv4_header[0] & 0x0F) * 4);
+	return ((((char *)ipv4_header)[0] & 0x0F) * 4);
 }
 
 bool	is_ours(char *icmp_buf, uint16_t sequence, bool recursive)
@@ -37,6 +38,8 @@ bool	is_ours(char *icmp_buf, uint16_t sequence, bool recursive)
 	else if (icmp_hdr->type < 13)
 	{
 		sub_hdr = icmp_buf + 8;
+		if (((struct iphdr *)sub_hdr)->protocol != IPPROTO_ICMP)
+			return (false);
 		sub_hdr += get_icmphdr_offset(sub_hdr);
 		return (is_ours(sub_hdr, sequence, true));
 	}
