@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/06 16:51:42 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 14:42:21 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/14 15:48:58 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ static const struct s_icmp_error_type_desc	g_type_desc[] = {
 {17, "Address Mask Reply", NULL},
 };
 
-static void type3(uint16_t code)
+static void	type3(uint16_t code)
 {
 	const char	*txt[] = {
 		"Destination Net Unreachable",
@@ -67,7 +67,7 @@ static void type3(uint16_t code)
 		printf("Unknown error\n");
 }
 
-static void type5(uint16_t code)
+static void	type5(uint16_t code)
 {
 	const char	*txt[] = {
 		"Redirect Network",
@@ -85,14 +85,15 @@ static void	type11(uint16_t code)
 {
 	if (code == 0)
 		printf("Time to live exceeded\n");
-	if (code == 1)
+	else if (code == 1)
 		printf("Frag reassembly time exceeded\n");
-	printf("Unknown Time Exceeded Message code\n");
+	else
+		printf("Unknown Time Exceeded Message code: %u\n", code);
 }
 
-void get_error(uint16_t type, uint16_t code)
+void	get_error(uint16_t type, uint16_t code)
 {
-	size_t index;
+	size_t	index;
 
 	index = 0;
 	while (index < (sizeof(g_type_desc) / sizeof(*g_type_desc)))
@@ -103,8 +104,9 @@ void get_error(uint16_t type, uint16_t code)
 				printf("%s\n", g_type_desc[index].message);
 			if (g_type_desc[index].code_getter)
 				g_type_desc[index].code_getter(code);
+			return ;
 		}
 		++index;
 	}
-	printf("Bad ICMP type %d", type);
+	printf("Bad ICMP type %d\n", type);
 }

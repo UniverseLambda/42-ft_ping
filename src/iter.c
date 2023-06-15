@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:33:34 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 11:07:29 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/14 15:49:16 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,9 +26,9 @@ void	new_listen_try(t_iter_info *iter)
 	iter->msg_header.msg_iovlen = 2;
 }
 
-void	new_iteration(t_iter_info *iter)
+void	new_iteration(const t_initedping *ping, t_iter_info *iter)
 {
-	signal(SIGALRM, signal_handler);
+	iter->ping = ping;
 	iter->sent_instant = now_micro();
 	ft_memset(&(iter->resp_origin), 0, sizeof(iter->resp_origin));
 	ft_memset(&(iter->ipv4_header), 0, 20);
@@ -37,7 +37,6 @@ void	new_iteration(t_iter_info *iter)
 	{.iov_base = &(iter->ipv4_header), .iov_len = 20};
 	iter->response_buffer_info[1] = (struct iovec)
 	{.iov_base = &(iter->response_data), .iov_len = 512};
-	iter->error_message = NULL;
+	iter->is_error = false;
 	iter->responded = true;
-	alarm(1);
 }

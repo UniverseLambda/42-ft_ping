@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 14:43:26 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 11:57:08 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 #include "inc/ping_stats.h"
 #include "inc/packet_util.h"
 #include "inc/get_error.h"
+#include "inc/dump.h"
 
 char	*resolve_cache_addr(const t_sockaddr_res *sockaddr)
 {
@@ -41,19 +42,16 @@ char	*resolve_cache_addr(const t_sockaddr_res *sockaddr)
 	return (buf);
 }
 
-void	received_stats(t_iter_info *iter, uint16_t sequence)
+void	received_stats(t_iter_info *iter)
 {
 	char		response_ip[INET_ADDRSTRLEN];
 	uint16_t	packet_len;
 
-	if (!iter->error_message)
+	if (!iter->is_error)
 		pstats_responded(iter->responded_time);
 	inet_ntop(AF_INET, &(sockaddr_in(&iter->resp_origin.sock_addr))->sin_addr,
 		response_ip, INET_ADDRSTRLEN);
-	if (iter->error_message)
-		printf("From %s icmp_seq=%u %s\n",
-			response_ip, sequence, iter->error_message);
-	else
+	if (!iter->is_error)
 	{
 		packet_len = (((uint16_t)iter->ipv4_header[2] << 8)
 				| iter->ipv4_header[3]) - ((iter->ipv4_header[0] & 0x0F) * 4);
@@ -66,18 +64,20 @@ void	received_stats(t_iter_info *iter, uint16_t sequence)
 
 bool	handle_packet(t_iter_info *iter, uint16_t sequence)
 {
-	if (!is_ours((char *)(iter->resp_icmphdr), sequence))
+	const uint16_t	type = iter->resp_icmphdr->type;
+	char			*subhdr;
+
+	if (type == 8 || type == 13 || type == 17)
 		return (false);
-	if (iter->resp_icmphdr->type == 0)
-	{
-		if (iter->resp_icmphdr->un.echo.id == getpid()
-			&& iter->resp_icmphdr->un.echo.sequence == sequence)
-			return (true);
-	}
-	else if (iter->resp_icmphdr->type != 8)
-	{
-		get_error(iter->resp_icmphdr->type, iter->resp_icmphdr->code);
+	if (!is_ours((char *)(iter->resp_icmphdr), sequence, false))
+		return (false);
+	if (type == 0)
 		return (true);
-	}
-	return (false);
+	get_error(type, iter->resp_icmphdr->code);
+	if (!iter->ping->verbose)
+		return (true);
+	subhdr = ((char *)iter->resp_icmphdr) + 8;
+	subhdr += get_icmphdr_offset(subhdr);
+	dump_packet((char *)(iter->ipv4_header), subhdr);
+	return (true);
 }

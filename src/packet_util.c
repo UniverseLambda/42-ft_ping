@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:39:29 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/07 17:15:53 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 11:56:49 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,18 +22,23 @@ size_t	get_icmphdr_offset(char *ipv4_header)
 	return ((ipv4_header[0] & 0x0F) * 4);
 }
 
-bool	is_ours(char *icmp_buf, uint16_t sequence)
+bool	is_ours(char *icmp_buf, uint16_t sequence, bool recursive)
 {
 	const t_icmphdr	*icmp_hdr = (t_icmphdr *)icmp_buf;
 	char			*sub_hdr;
 
-	if (icmp_hdr->type == 0 || icmp_hdr->type == 8)
+	if (recursive)
+		return (icmp_hdr->type == 8
+			&& icmp_hdr->un.echo.sequence == sequence
+			&& icmp_hdr->un.echo.id == getpid());
+	if (icmp_hdr->type == 0)
 		return (icmp_hdr->un.echo.id == getpid()
 			&& icmp_hdr->un.echo.sequence == sequence);
 	else if (icmp_hdr->type < 13)
 	{
 		sub_hdr = icmp_buf + 8;
-		return (is_ours(sub_hdr + (get_icmphdr_offset(sub_hdr)), sequence));
+		sub_hdr += get_icmphdr_offset(sub_hdr);
+		return (is_ours(sub_hdr, sequence, true));
 	}
 	return (false);
 }

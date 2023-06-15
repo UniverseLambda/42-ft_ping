@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 15:40:29 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/14 14:35:54 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ static bool	try_listen_for_answer(
 
 	if (recvmsg(ping->conn_fd, &iter->msg_header, MSG_WAITALL) <= 0)
 	{
-		if (errno == EINTR)
+		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 		{
 			iter->responded = false;
 			return (true);
@@ -116,14 +116,13 @@ static void	start_ping(const t_initedping *ping)
 	{
 		if (!try_send_message(ping, &sequence))
 			break ;
-		new_iteration(&iter);
+		new_iteration(ping, &iter);
 		while (1)
 		{
 			new_listen_try(&iter);
 			if (try_listen_for_answer(ping, &iter, sequence))
 				break ;
 		}
-		alarm(0);
 		if (*last_signal() == SIGINT)
 			break ;
 		else if (iter.responded)

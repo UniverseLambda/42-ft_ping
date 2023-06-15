@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 15:37:27 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/14 15:48:25 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,8 +73,9 @@ t_sockaddr_res	select_interface(t_string address)
 
 t_initedping	ping_init(char **argv)
 {
-	t_command		cmd;
-	t_initedping	res;
+	t_command				cmd;
+	t_initedping			res;
+	const struct timeval	tv = {1, 0};
 
 	cmd = ftp_command(argv);
 	res.conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
@@ -83,6 +84,7 @@ t_initedping	ping_init(char **argv)
 		fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
 		exit(2);
 	}
+	setsockopt(res.conn_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	res.sockaddr = select_interface(cmd.address);
 	res.address = cmd.address;
 	res.verbose = !!(cmd.flags & CF_VERBOSE);
