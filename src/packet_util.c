@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:39:29 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 15:07:05 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 16:22:30 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ bool	is_ours(char *icmp_buf, uint16_t sequence, bool recursive)
 void	make_icmp_packet(
 	t_icmphdr *icmp_header, t_string payload, char *dest)
 {
-	const uint64_t	timestamp = now_sec();
+	const uint64_t	timestamp = now_timestamp();
 
 	ft_memcpy(dest, icmp_header, sizeof(*icmp_header));
 	ft_memcpy(dest + sizeof(*icmp_header), payload.data, payload.len);

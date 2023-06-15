@@ -44,3 +44,4 @@ re: fclean all
 
 prod_reminder:
 	@echo "Need to change BUILD_TYPE to PROD"
+	@echo "Re-check headers and sources in Makefile"

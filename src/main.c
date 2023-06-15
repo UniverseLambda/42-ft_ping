@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/14 14:35:54 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/15 16:37:09 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,10 +99,10 @@ static bool	try_listen_for_answer(
 			"ft_ping: %s: %s\n", ping->address.data, strerror(errno));
 		exit(2);
 	}
-	iter->resp_origin.sock_addr_len = iter->msg_header.msg_namelen;
-	iter->responded_time = now_micro() - iter->sent_instant;
 	icmp_off = get_icmphdr_offset((char *)iter->ipv4_header) - (4 * 5);
 	iter->resp_icmphdr = (t_icmphdr *)(iter->response_data + (icmp_off));
+	iter->responded_time = now_micro() - micro_from_timestamp(((uint64_t *)iter->resp_icmphdr)[1]);
+	iter->resp_origin.sock_addr_len = iter->msg_header.msg_namelen;
 	return (handle_packet(iter, sequence));
 }
 
