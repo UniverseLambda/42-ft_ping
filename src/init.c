@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 15:20:42 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 13:54:46 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,7 @@ t_initedping	ping_init(char **argv)
 {
 	t_command				cmd;
 	t_initedping			res;
-	const struct timeval	tv = {1, 0};
+	const struct timeval	tv = {0, 100000};
 
 	cmd = ftp_command(argv);
 	res.conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);

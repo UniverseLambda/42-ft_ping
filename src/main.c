@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 13:30:38 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 14:13:38 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,25 +111,24 @@ static void	start_ping(const t_initedping *ping)
 {
 	uint16_t	sequence;
 	t_iter_info	iter;
+	uint64_t	last_sent;
 
 	sequence = 0;
 	while (1)
 	{
 		if (!try_send_message(ping, &sequence))
 			break ;
-		new_iteration(ping, &iter);
-		while (1)
+		last_sent = now_micro();
+		while (now_micro() - last_sent < 1000000)
 		{
-			new_listen_try(&iter);
-			if (try_listen_for_answer(ping, &iter))
-				break ;
+			new_iteration(ping, &iter);
+			if (*last_signal() == SIGINT)
+				return ;
+			if (!try_listen_for_answer(ping, &iter))
+				continue ;
+			else if (iter.responded)
+				received_stats(&iter, sequence);
 		}
-		if (*last_signal() == SIGINT)
-			break ;
-		else if (iter.responded)
-			received_stats(&iter, sequence);
-		if (iter.responded_time < 1000000)
-			usleep(1000000 - iter.responded_time);
 	}
 }
 
