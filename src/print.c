@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 14:36:55 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/13 15:44:27 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 22:19:54 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,5 +67,5 @@ void	print_time(uint64_t time)
 	const uint64_t	left = time / 1000;
 	const uint64_t	right = time % 1000;
 
-	printf("%lu.%.3lu ms\n", left, right);
+	printf("%lu.%.3lu ms", left, right);
 }

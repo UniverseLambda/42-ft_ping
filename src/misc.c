@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 13:14:39 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 22:21:13 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@
 #include "inc/packet_util.h"
 #include "inc/get_error.h"
 #include "inc/dump.h"
+#include "inc/ft_bits.h"
 
 char	*resolve_cache_addr(const t_sockaddr_res *sockaddr)
 {
@@ -40,6 +41,13 @@ char	*resolve_cache_addr(const t_sockaddr_res *sockaddr)
 			buf, sizeof(buf), NULL, 0, 0))
 		buf[0] = '\0';
 	return (buf);
+}
+
+static inline const char	*get_dup_str(t_iter_info *iter, uint16_t pkt_seq)
+{
+	if (is_bit_set(iter->ping->prev_pkt, iter->ping->prev_pkt_len, pkt_seq))
+		return (" (DUP!)");
+	return ("");
 }
 
 void	received_stats(t_iter_info *iter)
@@ -59,6 +67,7 @@ void	received_stats(t_iter_info *iter)
 			response_ip, iter->resp_icmphdr->un.echo.sequence,
 			iter->ipv4_header[8]);
 		print_time(iter->responded_time);
+		printf("%s\n", get_dup_str(iter, iter->resp_icmphdr->un.echo.sequence));
 	}
 }
 

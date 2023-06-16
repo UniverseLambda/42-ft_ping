@@ -1,35 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   init.h                                             :+:      :+:    :+:   */
+/*   ft_bits.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/19 10:37:44 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 22:13:09 by clsaad           ###   ########.fr       */
+/*   Created: 2023/06/16 18:05:30 by clsaad            #+#    #+#             */
+/*   Updated: 2023/06/16 21:56:57 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef INIT_H
-# define INIT_H
+#ifndef FT_BITS_H
+# define FT_BITS_H
 
-# include "posix_setup.h"
+# include <stdint.h>
+# include <unistd.h>
+# include <stdbool.h>
 
-# include <netdb.h>
-# include "ft_result.h"
-# include "ft_string.h"
+bool	is_bit_set(const uint64_t *bits_array, size_t len, uint64_t seq);
+void	set_bit(uint64_t *bits_array, size_t len, uint64_t seq);
+void	unset_bit(uint64_t *bits_array, size_t len, uint64_t seq);
 
-typedef struct s_initedping
-{
-	t_sockaddr_res	sockaddr;
-	t_string		address;
-	int				conn_fd;
-	bool			verbose;
-	uint16_t		icmp_ident;
-	uint64_t		*prev_pkt;
-	size_t			prev_pkt_len;
-}	t_initedping;
-
-t_initedping	ping_init(char **argv);
-
-#endif // INIT_H
+#endif // FT_BITS_H

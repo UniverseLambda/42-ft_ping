@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 14:13:38 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 22:13:14 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@
 #include "inc/packet_util.h"
 #include "inc/print.h"
 #include "inc/misc.h"
+#include "inc/ft_bits.h"
 
 int	usleep(useconds_t usec);
 
@@ -80,6 +81,8 @@ static bool	try_send_message(const t_initedping *ping, uint16_t *sequence)
 			ping->address.data, strerror(send_res.payload.error_code));
 		exit(2);
 	}
+	unset_bit(ping->prev_pkt, ping->prev_pkt_len,
+		*sequence);
 	return (true);
 }
 
@@ -127,7 +130,10 @@ static void	start_ping(const t_initedping *ping)
 			if (!try_listen_for_answer(ping, &iter))
 				continue ;
 			else if (iter.responded)
+			{
 				received_stats(&iter, sequence);
+				set_bit(ping->prev_pkt, ping->prev_pkt_len, sequence);
+			}
 		}
 	}
 }
