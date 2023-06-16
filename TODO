@@ -1,7 +1,10 @@
-- Using time included in the packet instead of iter->sent_instant
-- Stop checking sequence of receiving
 - More read before sending (based on time since last send)
 - IPv4 Option printing (If I have the force to do)
 - Detect duplicates (same)
 
 - FIX UNALIGNED READ WITH -fsanitize=undefined
+
+
+FAIT
+- Using time included in the packet instead of iter->sent_instant
+- Stop checking sequence of receiving

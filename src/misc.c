@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 14:45:06 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 13:14:39 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ void	received_stats(t_iter_info *iter)
 	}
 }
 
-bool	handle_packet(t_iter_info *iter, uint16_t sequence)
+bool	handle_packet(t_iter_info *iter)
 {
 	const uint16_t	type = iter->resp_icmphdr->type;
 	uint8_t			*subhdr;
@@ -71,7 +71,7 @@ bool	handle_packet(t_iter_info *iter, uint16_t sequence)
 
 	if (type == 8 || type == 13 || type == 17)
 		return (false);
-	if (!is_ours((char *)(iter->resp_icmphdr), sequence, false))
+	if (!is_ours((char *)(iter->resp_icmphdr), false))
 		return (false);
 	if (type == 0)
 		return (true);

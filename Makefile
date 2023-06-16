@@ -44,4 +44,6 @@ re: fclean all
 
 prod_reminder:
 	@echo "Need to change BUILD_TYPE to PROD"
-	@echo "Re-check headers and sources in Makefile"
+	@echo "Re-check headers and sources listing in Makefile"
+	@echo "Launch the norm"
+	@echo "Remove the -fsanitize=undefined"

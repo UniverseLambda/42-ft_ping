@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:38:47 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 14:45:39 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 13:15:19 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 typedef struct icmphdr	t_icmphdr;
 
 size_t				get_icmphdr_offset(void *ipv4_header);
-bool				is_ours(char *icmp_buf, uint16_t sequence, bool recursive);
+bool				is_ours(char *icmp_buf, bool recursive);
 void				make_icmp_packet(
 						t_icmphdr *icmp_header, t_string payload, char *dest);
 uint16_t			compute_checksum(void *data, size_t data_len);

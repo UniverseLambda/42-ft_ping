@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/15 16:37:09 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 13:30:38 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,7 +84,7 @@ static bool	try_send_message(const t_initedping *ping, uint16_t *sequence)
 }
 
 static bool	try_listen_for_answer(
-	const t_initedping *ping, t_iter_info *iter, uint16_t sequence)
+	const t_initedping *ping, t_iter_info *iter)
 {
 	size_t	icmp_off;
 
@@ -101,9 +101,10 @@ static bool	try_listen_for_answer(
 	}
 	icmp_off = get_icmphdr_offset((char *)iter->ipv4_header) - (4 * 5);
 	iter->resp_icmphdr = (t_icmphdr *)(iter->response_data + (icmp_off));
-	iter->responded_time = now_micro() - micro_from_timestamp(((uint64_t *)iter->resp_icmphdr)[1]);
+	iter->responded_time = now_micro() - micro_from_timestamp(
+			((uint64_t *)iter->resp_icmphdr)[1]);
 	iter->resp_origin.sock_addr_len = iter->msg_header.msg_namelen;
-	return (handle_packet(iter, sequence));
+	return (handle_packet(iter));
 }
 
 static void	start_ping(const t_initedping *ping)
@@ -120,7 +121,7 @@ static void	start_ping(const t_initedping *ping)
 		while (1)
 		{
 			new_listen_try(&iter);
-			if (try_listen_for_answer(ping, &iter, sequence))
+			if (try_listen_for_answer(ping, &iter))
 				break ;
 		}
 		if (*last_signal() == SIGINT)
