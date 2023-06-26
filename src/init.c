@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 22:13:09 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 22:31:52 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,11 +72,11 @@ t_sockaddr_res	select_interface(t_string address)
 }
 
 // Add this to test the TTL
-// const int				ttl = 5;
 // setsockopt(res.conn_fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 
 t_initedping	ping_init(char **argv)
 {
+const int				ttl = 5;
 	t_command				cmd;
 	t_initedping			res;
 	const struct timeval	tv = {0, 100000};
@@ -90,6 +90,7 @@ t_initedping	ping_init(char **argv)
 		exit(2);
 	}
 	setsockopt(res.conn_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(res.conn_fd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 	res.sockaddr = select_interface(cmd.address);
 	res.address = cmd.address;
 	res.verbose = !!(cmd.flags & CF_VERBOSE);

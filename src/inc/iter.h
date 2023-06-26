@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:33:40 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 14:11:36 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 22:30:01 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ typedef struct s_iter_info
 	bool				responded;
 	uint64_t			responded_time;
 	bool				is_error;
+	size_t				recv_len;
 }	t_iter_info;
 
 void	new_iteration(const t_initedping *ping, t_iter_info *iter);

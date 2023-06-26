@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 22:21:13 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/16 22:31:18 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,8 +87,7 @@ bool	handle_packet(t_iter_info *iter)
 	iter->is_error = true;
 	inet_ntop(AF_INET, &(sockaddr_in(&iter->resp_origin.sock_addr))->sin_addr,
 		response_ip, INET_ADDRSTRLEN);
-	packet_len = (((uint16_t)iter->ipv4_header[2] << 8)
-			| iter->ipv4_header[3]) - ((iter->ipv4_header[0] & 0x0F) * 4);
+	packet_len = iter->recv_len - ((iter->ipv4_header[0] & 0x0F) * 4);
 	printf("%u bytes from %s: ", packet_len, response_ip);
 	get_error(type, iter->resp_icmphdr->code);
 	if (!iter->ping->verbose)
