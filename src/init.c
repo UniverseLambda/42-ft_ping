@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 22:31:52 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/26 13:19:34 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ t_sockaddr_res	select_interface(t_string address)
 
 t_initedping	ping_init(char **argv)
 {
-const int				ttl = 5;
+	const int				ttl = 5;
 	t_command				cmd;
 	t_initedping			res;
 	const struct timeval	tv = {0, 100000};
