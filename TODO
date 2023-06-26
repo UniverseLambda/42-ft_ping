@@ -1,8 +1,7 @@
-- IPv4 Option printing (same)
+- IPv4 Option printing (If I have the force to do)
 - Remove unused code
 - Fix the goddamn bytes count for errors
 
-- FIX UNALIGNED READ WITH -fsanitize=undefined
 
 
 FAIT
@@ -10,3 +9,4 @@ FAIT
 - Stop checking sequence of receiving
 - More read before sending (based on time since last send)
 - Detect duplicates (If I have the force to do)
+- FIX UNALIGNED READ WITH -fsanitize=undefined
