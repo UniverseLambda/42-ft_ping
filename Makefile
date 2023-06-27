@@ -2,10 +2,10 @@
 
 NAME := ft_ping
 
-BUILD_TYPE := DEBUG
+BUILD_TYPE := PROD
 
-SRC_FILES := cli.c ft_result.c ft_string.c ft_util.c main.c ping_stats.c ft_time.c ft_sqrt.c init.c ft_signal.c get_error.c iter.c packet_util.c misc.c print.c dump.c ft_bits.c
-INC_FILES := cli.h ft_result.h ft_string.h ft_util.h ping_stats.h ft_time.h ft_sqrt.h init.h ft_signal.h get_error.h iter.h packet_util.h dump.h ft_bits.h
+SRC_FILES := cli.c dump.c ft_bits.c ft_result.c ft_signal.c ft_sqrt.c ft_string.c ft_time.c ft_util.c get_error.c init.c iter.c main.c misc.c packet_util.c ping_stats.c print.c
+INC_FILES := cli.h dump.h ft_bits.h ft_result.h ft_signal.h ft_sqrt.h ft_string.h ft_time.h ft_util.h get_error.h init.h iter.h misc.h packet_util.h ping_stats.h print.h
 
 SRCS_DIR := src
 INCS_DIR := inc
@@ -28,7 +28,7 @@ CFLAGS += -D$(BUILD_TYPE)=
 all: $(NAME)
 
 $(NAME):	$(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS)  $(BUILD_OBJS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(BUILD_OBJS)
 
 $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c Makefile $(INCS)
 	@$(MKDIR) -p $(dir $@)
