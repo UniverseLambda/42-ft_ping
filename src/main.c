@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/27 14:58:00 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 16:52:33 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -152,6 +152,7 @@ int	main(int argc, char **argv)
 	{
 		ping.address = ping.address_array[address_idx - 1];
 		ping.sockaddr = select_interface(ping.address);
+		ft_memset(ping.prev_pkt, 0, sizeof(uint64_t) * ping.address_total);
 		if (!ping.sockaddr.is_valid)
 			continue ;
 		pstats_init(ping.address);
