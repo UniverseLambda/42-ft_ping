@@ -6,11 +6,9 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:17:50 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/26 14:18:54 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 14:58:00 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#include "inc/posix_setup.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -44,8 +42,6 @@
 #include "inc/misc.h"
 #include "inc/ft_bits.h"
 
-int	usleep(useconds_t usec);
-
 static t_result	send_icmp_echo(
 	int conn_fd, uint16_t *sequence, t_sockaddr_res sa)
 {
@@ -62,7 +58,7 @@ static t_result	send_icmp_echo(
 	((uint16_t *)buffer)[1]
 		= ~compute_checksum(buffer, sizeof(header) + data.len);
 	if (0 > sendto(conn_fd, buffer, sizeof(header) + data.len, 0,
-			&sa.sock_addr, sa.sock_addr_len) || *last_signal() == SIGINT)
+			&sa.sock_addr, sa.sock_addr_len))
 		return (result_err(errno));
 	pstats_sent();
 	return (result_ok((union u_resultable)0));
@@ -145,14 +141,28 @@ static void	start_ping(const t_initedping *ping)
 
 int	main(int argc, char **argv)
 {
-	const t_initedping	ping = ping_init(argv);
+	t_initedping		ping;
+	char				addr_str[INET_ADDRSTRLEN];
+	size_t				address_idx;
 
 	(void)argc;
-	printf("PING %s: 56 data bytes", ping.address.data);
-	if (ping.verbose)
-		printf(", id 0x%1$04x = %1$u", ping.icmp_ident);
-	printf("\n");
-	start_ping(&ping);
-	print_end_stats();
+	ping = ping_init(argv);
+	address_idx = 0;
+	while (address_idx++ < ping.address_total)
+	{
+		ping.address = ping.address_array[address_idx - 1];
+		ping.sockaddr = select_interface(ping.address);
+		if (!ping.sockaddr.is_valid)
+			continue ;
+		pstats_init(ping.address);
+		inet_ntop(AF_INET, &sockaddr_in(&ping.sockaddr)->sin_addr, addr_str,
+			INET_ADDRSTRLEN);
+		printf("PING %s (%s): 56 data bytes", ping.address.data, addr_str);
+		if (ping.verbose)
+			printf(", id 0x%1$04x = %1$u", ping.icmp_ident);
+		printf("\n");
+		start_ping(&ping);
+		print_end_stats();
+	}
 	return (0);
 }

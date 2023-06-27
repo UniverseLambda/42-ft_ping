@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:18:09 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/15 15:28:10 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 14:27:16 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ typedef struct s_sockaddr_res
 {
 	struct sockaddr	sock_addr;
 	size_t			sock_addr_len;
+	bool			is_valid;
 }	t_sockaddr_res;
 
 union u_resultable

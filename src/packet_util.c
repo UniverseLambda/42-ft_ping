@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:39:29 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 13:15:02 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 11:51:52 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,7 @@ uint16_t	compute_checksum(void *data, size_t data_len)
 	return (sum);
 }
 
-struct sockaddr_in	*sockaddr_in(void *ptr)
+const struct sockaddr_in	*sockaddr_in(const void *ptr)
 {
 	return (ptr);
 }

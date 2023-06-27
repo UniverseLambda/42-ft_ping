@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/19 10:32:01 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/26 14:14:43 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 14:29:14 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 #include "inc/ft_result.h"
 #include "inc/ping_stats.h"
 #include "inc/ft_signal.h"
+#include "inc/ft_util.h"
 
 static struct addrinfo	*resolve_host(t_string host)
 {
@@ -39,7 +40,7 @@ static struct addrinfo	*resolve_host(t_string host)
 	{
 		fprintf(stderr,
 			"ft_ping: %s: %s\n", host.data, gai_strerror(gai_ret_val));
-		exit(1);
+		return (NULL);
 	}
 	return (result);
 }
@@ -54,6 +55,8 @@ t_sockaddr_res	select_interface(t_string address)
 	selected_address = (struct sockaddr){0};
 	selected_addresslen = 0;
 	resolved = resolve_host(address);
+	if (resolved == NULL)
+		return ((t_sockaddr_res){0});
 	current = resolved;
 	while (current != NULL)
 	{
@@ -66,9 +69,7 @@ t_sockaddr_res	select_interface(t_string address)
 		current = current->ai_next;
 	}
 	freeaddrinfo(resolved);
-	return ((t_sockaddr_res){
-		.sock_addr = selected_address, .sock_addr_len = selected_addresslen
-	});
+	return ((t_sockaddr_res){selected_address, selected_addresslen, true});
 }
 
 // Add this to test the TTL
@@ -86,17 +87,16 @@ t_initedping	ping_init(char **argv)
 	res.conn_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (res.conn_fd == -1)
 	{
-		fprintf(stderr, "ft_ping: %s: %s\n", cmd.address.data, strerror(errno));
+		fprintf(stderr, "ft_ping: %s\n", strerror(errno));
 		exit(2);
 	}
 	setsockopt(res.conn_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-	res.sockaddr = select_interface(cmd.address);
-	res.address = cmd.address;
+	ft_memcpy(res.address_array, cmd.address, sizeof(res.address_array));
+	res.address_total = cmd.address_total;
 	res.verbose = !!(cmd.flags & CF_VERBOSE);
 	res.icmp_ident = getpid();
 	res.prev_pkt = prev_packets;
 	res.prev_pkt_len = sizeof(prev_packets) / sizeof(*prev_packets);
-	pstats_init(cmd.address);
 	signal(SIGINT, signal_handler);
 	return (res);
 }

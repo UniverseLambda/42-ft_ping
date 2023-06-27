@@ -6,11 +6,9 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 17:11:02 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 22:31:18 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 14:59:48 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#include "inc/posix_setup.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>

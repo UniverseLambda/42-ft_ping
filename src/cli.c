@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:11 by clsaad            #+#    #+#             */
-/*   Updated: 2023/05/19 13:46:21 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 13:52:53 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,16 +27,16 @@ __attribute__ ((__noreturn__)) static void	err_exit(char *err)
 __attribute__ ((__noreturn__)) static void	display_help(void)
 {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage\n");
-	fprintf(stderr, "ft_ping [options] <destination>\n");
+	fprintf(stderr, "Usage: ft_ping [OPTION...] HOST ...\n");
+	fprintf(stderr, "Send ICMP ECHO_REQUEST packets to network hosts.\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, " Options valid for all request types:\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "  <destination>      dns name or ip address\n");
-	fprintf(stderr, "  -h                 print help and exit\n");
-	fprintf(stderr, "  -v                 verbose output\n");
+	fprintf(stderr, "  -v,                        verbose output\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "For more details see ping(8).\n");
+	fprintf(stderr, "  -?                         give this help list\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Report bugs to <bug-inetutils@gnu.org>.\n");
 	exit(2);
 }
 
@@ -44,7 +44,7 @@ static void	set_opt_flag(unsigned int *flags, char c)
 {
 	t_command_flag	selected_flag;
 
-	if (c == 'h')
+	if (c == '?')
 		selected_flag = CF_HELP;
 	else if (c == 'v')
 		selected_flag = CF_VERBOSE;
@@ -61,11 +61,10 @@ static void	set_opt_flag(unsigned int *flags, char c)
 static t_command	parse_args(char **argv)
 {
 	t_command	result;
-	bool		has_address;
 	t_string	s;
 
 	result.flags = 0;
-	has_address = false;
+	result.address_total = 0;
 	if (argv[1] == NULL)
 		err_exit("usage error: Destination address required\n");
 	while (*(++argv))
@@ -74,15 +73,12 @@ static t_command	parse_args(char **argv)
 		s = string_new(*argv);
 		if (string_char_at(&s, 0) == '-')
 			string_foreach(&s, (t_foreach_handler)set_opt_flag, &result.flags);
-		else if (has_address)
-			display_help();
+		else if (result.address_total >= 512)
+			err_exit("usage error: Address count limit exceeded (512)\n");
 		else
-		{
-			has_address = true;
-			result.address = s;
-		}
+			result.address[result.address_total++] = s;
 	}
-	if (!has_address && !(result.flags & CF_HELP))
+	if (!result.address_total && !(result.flags & CF_HELP))
 		err_exit("usage error: Destination address required\n");
 	return (result);
 }

@@ -6,14 +6,12 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/07 13:33:40 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/16 22:30:01 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 14:59:39 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef ITER_H
 # define ITER_H
-
-# include "posix_setup.h"
 
 # include <stdint.h>
 
