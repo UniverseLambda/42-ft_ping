@@ -6,7 +6,7 @@
 /*   By: clsaad <clsaad@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/27 17:19:11 by clsaad            #+#    #+#             */
-/*   Updated: 2023/06/27 13:52:53 by clsaad           ###   ########.fr       */
+/*   Updated: 2023/06/27 16:02:16 by clsaad           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ __attribute__ ((__noreturn__)) static void	display_help(void)
 	fprintf(stderr, "\n");
 	fprintf(stderr, " Options valid for all request types:\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  -v,                        verbose output\n");
+	fprintf(stderr, "  -v                         verbose output\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  -?                         give this help list\n");
 	fprintf(stderr, "\n");
